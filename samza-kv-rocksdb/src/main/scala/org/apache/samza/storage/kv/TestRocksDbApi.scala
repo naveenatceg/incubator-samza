@@ -38,9 +38,23 @@ object TestRocksDbApi
 
     options.setTableFormatConfig(new PlainTableConfig());
     assert(options.tableFactoryName().equals("PlainTable"));
+    db.put("d".getBytes(), "wahevers".getBytes());
     db.put("hello".getBytes(), "world".getBytes());
+    db.put("c".getBytes(),"whatevers".getBytes());
+    db.put("a".getBytes(), "whatever".getBytes());
+    db.put("b".getBytes(), "wahevers".getBytes());
+    db.put("e".getBytes(), "wahevers".getBytes());
+    db.put("aa".getBytes(), "what".getBytes());
     val value = db.get("hello".getBytes());
     assert("world".equals(new String(value)));
+
+    val it = db.newIterator();
+    it.seek("c".getBytes());
+    while(it.isValid)
+    {
+      System.out.println(new String(it.key));
+      it.next
+    }
 
     // be sure to release the c++ pointer
     db.close();

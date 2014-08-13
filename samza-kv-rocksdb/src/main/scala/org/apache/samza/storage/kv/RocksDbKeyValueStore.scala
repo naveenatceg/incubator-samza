@@ -23,13 +23,13 @@ object RocksDbKeyValueStore
     // Cache size and write buffer size are specified on a per-container basis.
     options.setCacheSize(cacheSize / containerContext.partitions.size)
     options.setWriteBufferSize((writeBufSize / containerContext.partitions.size).toInt)
-    options.setBlockSize(storeConfig.getInt("leveldb.block.size.bytes", 4096))
+    options.setBlockSize(storeConfig.getInt("rocksdb.block.size.bytes", 4096))
     options.setCompressionType(
       storeConfig.get("rocksdb.compression", "snappy") match {
         case "snappy" => CompressionType.SNAPPY_COMPRESSION
         case "none" => CompressionType.NO_COMPRESSION
         case _ =>
-          logger.warn("Unknown rocksdb.compression codec %s, defaulting to Snappy" format storeConfig.get("leveldb.compression", "snappy"))
+          logger.warn("Unknown rocksdb.compression codec %s, defaulting to Snappy" format storeConfig.get("rocksdb.compression", "snappy"))
           CompressionType.SNAPPY_COMPRESSION
       })
     options.setCreateIfMissing(true)
@@ -54,6 +54,7 @@ class RocksDbKeyValueStore(
   private lazy val db = RocksDB.open(options,dir.toString)
   private val lexicographic = new LexicographicComparator()
   private var deletesSinceLastCompaction = 0
+
 
   def get(key: Array[Byte]): Array[Byte] = {
     maybeCompact
@@ -111,7 +112,7 @@ class RocksDbKeyValueStore(
     maybeCompact
     metrics.ranges.inc
     require(from != null && to != null, "Null bound not allowed.")
-    new LevelDbRangeIterator(db.newIterator(), from, to)
+    new RocksDbRangeIterator(db.newIterator(),from,to)
   }
 
   def all(): KeyValueIterator[Array[Byte], Array[Byte]] = {
@@ -119,7 +120,7 @@ class RocksDbKeyValueStore(
     metrics.alls.inc
     val iter = db.newIterator()
     iter.seekToFirst()
-    new LevelDbIterator(iter)
+    new RocksDbIterator(iter)
   }
 
   /**
@@ -139,14 +140,14 @@ class RocksDbKeyValueStore(
     // According to LevelDB's docs:
     // begin==NULL is treated as a key before all keys in the database.
     // end==NULL is treated as a key after all keys in the database.
-    db.compactRange(null, null)
-    deletesSinceLastCompaction = 0
+    //db.compactRange(null, null)
+    //deletesSinceLastCompaction = 0
   }
 
   def flush {
     metrics.flushes.inc
     // TODO can't find a flush for leveldb
-    trace("Flushing, but flush in LevelDbKeyValueStore doesn't do anything.")
+    trace("Flushing, but flush in RocksDbKeyValueStore doesn't do anything.")
   }
 
   def close() {
@@ -155,28 +156,45 @@ class RocksDbKeyValueStore(
     db.close()
   }
 
-  class LevelDbIterator(iter: DBIterator) extends KeyValueIterator[Array[Byte], Array[Byte]] {
+
+  class RocksDbIterator(iter: RocksIterator) extends KeyValueIterator[Array[Byte], Array[Byte]] {
     private var open = true
     def close() = {
       open = false
-      iter.close()
+      //iter.close()
     }
-    def remove() = iter.remove()
-    def hasNext() = iter.hasNext()
+
+    def remove() =  throw new UnsupportedOperationException("RocksDB iterator doesn't support remove"); //iter.remove();
+
+    def hasNext() = {
+      iter.next()
+      val hasNext = iter.isValid
+      iter.prev()
+      hasNext
+    };
+
+    protected def peekKey() = {
+      iter.next()
+      val key = iter.key()
+      iter.prev()
+      key
+    }
+
     def next() = {
       if (!hasNext()) {
         throw new NoSuchElementException
       }
 
-      val curr = iter.next
-      val key = curr.getKey
-      val value = curr.getValue
+      iter.next
+      val key = iter.key
+      val value = iter.value
       metrics.bytesRead.inc(key.size)
       if (value != null) {
         metrics.bytesRead.inc(value.size)
       }
       new Entry(key, value)
     }
+
     override def finalize() {
       if (open) {
         System.err.println("Leaked reference to level db iterator, forcing close.")
@@ -185,18 +203,18 @@ class RocksDbKeyValueStore(
     }
   }
 
-  class LevelDbRangeIterator(iter: DBIterator, from: Array[Byte], to: Array[Byte]) extends LevelDbIterator(iter) {
-    val comparator = if (options.comparator == null) lexicographic else options.comparator
+  class RocksDbRangeIterator(iter: RocksIterator, from: Array[Byte], to: Array[Byte]) extends RocksDbIterator(iter) {
+    val comparator = lexicographic //if (options.comparator == null) lexicographic else options.comparator
     iter.seek(from)
     override def hasNext() = {
-      iter.hasNext() && comparator.compare(iter.peekNext.getKey, to) < 0
+      iter.isValid && comparator.compare(peekKey, to) < 0
     }
   }
 
   /**
    * Compare two array lexicographically using unsigned byte arithmetic
    */
-  class LexicographicComparator extends DBComparator {
+  class LexicographicComparator {
     def compare(k1: Array[Byte], k2: Array[Byte]): Int = {
       val l = math.min(k1.length, k2.length)
       var i = 0
