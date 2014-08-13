@@ -55,36 +55,38 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
 
   @Before
   def setup() {
-    val kvStore : KeyValueStore[Array[Byte], Array[Byte]] = if ("leveldb".equals(typeOfStore)) {
-      dir.mkdirs()
-      val leveldb = new LevelDbKeyValueStore(dir, new Options)
-      leveldb
-    } else if ("inmemory".equals(typeOfStore)) {
-      val inmemoryDb = new InMemoryKeyValueStore
-      inmemoryDb
-    } else {
-      throw new IllegalArgumentException("Type of store undefined: " + typeOfStore)
+    val kvStore : KeyValueStore[Array[Byte], Array[Byte]] = typeOfStore match {
+      case "leveldb" =>
+        dir.mkdirs ()
+        new LevelDbKeyValueStore (dir, new Options)
+      case "inmemory" =>
+        new InMemoryKeyValueStore
+      case "rocksdb" =>
+        new RocksDbKeyValueStore (dir, new org.rocksdb.Options().setCreateIfMissing(true))
+      case _ =>
+        throw new IllegalArgumentException("Type of store undefined: " + typeOfStore)
     }
 
     val passThroughSerde = new Serde[Array[Byte]] {
       def toBytes(obj: Array[Byte]) = obj
       def fromBytes(bytes: Array[Byte]) = bytes
     }
-    store = if ("cache".equals(storeConfig)) {
+
+    store = storeConfig match {
+      case "cache" =>
       cache = true
       new CachedStore(kvStore, CacheSize, BatchSize)
-    } else if ("serde".equals(storeConfig)) {
+      case "serde" =>
       serde = true
       new SerializedKeyValueStore(kvStore, passThroughSerde, passThroughSerde)
-    } else if ("cache-and-serde".equals(storeConfig)) {
+      case "cache-and-serde" =>
       val serializedStore = new SerializedKeyValueStore(kvStore, passThroughSerde, passThroughSerde)
       serde = true
       cache = true
       new CachedStore(serializedStore, CacheSize, BatchSize)
-    } else {
+      case _ =>
       kvStore
     }
-
     store = new NullSafeKeyValueStore(store)
   }
 
@@ -170,6 +172,7 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
       store.put(b(letter.toString), b(letter.toString))
 
     val iter = store.range(b(letters(from)), b(letters(to)))
+    System.out.println("From:" + from + " Store: " + store + " letters(from)" + letters(from));
     checkRange(letters.slice(from, to), iter)
     iter.close()
   }
@@ -340,5 +343,5 @@ object TestKeyValueStores {
   val CacheSize = 10
   val BatchSize = 5
   @Parameters
-  def parameters: java.util.Collection[Array[String]] = Arrays.asList(Array("leveldb", "cache"), Array("leveldb", "serde"), Array("leveldb", "cache-and-serde"), Array("leveldb", "none"), Array("inmemory", "cache"), Array("inmemory", "serde"), Array("inmemory", "cache-and-serde"), Array("inmemory", "none"))
+  def parameters: java.util.Collection[Array[String]] = Arrays.asList(Array("leveldb", "cache"), Array("leveldb", "serde"), Array("leveldb", "cache-and-serde"), Array("leveldb", "none"), Array("inmemory", "cache"), Array("inmemory", "serde"), Array("inmemory", "cache-and-serde"), Array("inmemory", "none"), Array("rocksdb","cache"), Array("rocksdb","serde"), Array("rocksdb","cache-and-serde"), Array("rocksdb","none"))
 }

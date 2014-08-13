@@ -5,7 +5,7 @@ import java.io.File
 
 import org.apache.samza.container.SamzaContainerContext
 import org.apache.samza.metrics.MetricsRegistry
-import org.apache.samza.storage.kv.{KeyValueStore, BaseKeyValueStorageEngineFactory}
+import org.apache.samza.storage.kv._
 import org.apache.samza.system.SystemStreamPartition
 
 
@@ -28,6 +28,12 @@ class RocksDbKeyValueStorageEngineFactory [K, V] extends BaseKeyValueStorageEngi
                           registry: MetricsRegistry,
                           changeLogSystemStreamPartition: SystemStreamPartition,
                           containerContext: SamzaContainerContext): KeyValueStore[Array[Byte], Array[Byte]] = {
+    val storageConfig = containerContext.config.subset("stores." + storeName + ".", true)
+    val deleteCompactionThreshold = storageConfig.getInt("compaction.delete.threshold", -1)
 
+    val rocksDbMetrics = new KeyValueStoreMetrics(storeName, registry)
+    val rocksDbOptions = RocksDbKeyValueStore.options(storageConfig, containerContext)
+    val rocksDb = new RocksDbKeyValueStore(storeDir, rocksDbOptions, deleteCompactionThreshold, rocksDbMetrics)
+    rocksDb
   }
 }

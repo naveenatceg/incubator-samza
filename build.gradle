@@ -340,6 +340,7 @@ project(":samza-kv-leveldb_$scalaVersion") {
     compile project(":samza-core_$scalaVersion")
     compile project(":samza-kv_$scalaVersion")
     compile project(":samza-kv-inmemory_$scalaVersion")
+    compile project(":samza-kv-rocksdb_$scalaVersion")
     compile "org.scala-lang:scala-library:$scalaLibVersion"
     compile "org.fusesource.leveldbjni:leveldbjni-all:$leveldbVersion"
     testCompile "junit:junit:$junitVersion"
