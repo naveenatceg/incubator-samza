@@ -74,18 +74,18 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
 
     store = storeConfig match {
       case "cache" =>
-      cache = true
-      new CachedStore(kvStore, CacheSize, BatchSize)
+        cache = true
+        new CachedStore(kvStore, CacheSize, BatchSize)
       case "serde" =>
-      serde = true
-      new SerializedKeyValueStore(kvStore, passThroughSerde, passThroughSerde)
+        serde = true
+        new SerializedKeyValueStore(kvStore, passThroughSerde, passThroughSerde)
       case "cache-and-serde" =>
-      val serializedStore = new SerializedKeyValueStore(kvStore, passThroughSerde, passThroughSerde)
-      serde = true
-      cache = true
-      new CachedStore(serializedStore, CacheSize, BatchSize)
+        val serializedStore = new SerializedKeyValueStore(kvStore, passThroughSerde, passThroughSerde)
+        serde = true
+        cache = true
+        new CachedStore(serializedStore, CacheSize, BatchSize)
       case _ =>
-      kvStore
+        kvStore
     }
     store = new NullSafeKeyValueStore(store)
   }
@@ -172,7 +172,6 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
       store.put(b(letter.toString), b(letter.toString))
 
     val iter = store.range(b(letters(from)), b(letters(to)))
-    System.out.println("From:" + from + " Store: " + store + " letters(from)" + letters(from));
     checkRange(letters.slice(from, to), iter)
     iter.close()
   }
@@ -218,14 +217,14 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
   def testBrokenScalaDoubleLinkedList() {
     val something = b("")
     val keys = letters
-      .map(b(_))
-      .toArray
+            .map(b(_))
+            .toArray
 
     // Load the cache to capacity.
     letters
-      .slice(0, TestKeyValueStores.CacheSize)
-      .map(b(_))
-      .foreach(store.put(_, something))
+            .slice(0, TestKeyValueStores.CacheSize)
+            .map(b(_))
+            .foreach(store.put(_, something))
 
     // Now keep everything in the cache, but with an empty dirty list.
     store.flush
@@ -250,9 +249,9 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
     // Get rid of 1 from the cache by reading every other element, and then 
     // putting one new element.
     letters
-      .slice(2, TestKeyValueStores.CacheSize)
-      .map(b(_))
-      .foreach(store.get(_))
+            .slice(2, TestKeyValueStores.CacheSize)
+            .map(b(_))
+            .foreach(store.get(_))
     store.put(keys(TestKeyValueStores.CacheSize), something)
 
     // Now try and trigger an NPE since the dirty list has an element (1) 
@@ -269,8 +268,8 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
     // Make test deterministic by seeding the random number generator.
     val rand = new Random(12345)
     val keys = letters
-      .map(b(_))
-      .toArray
+            .map(b(_))
+            .toArray
 
     // Map from letter to key byte array used for letter, and expected value.
     // We have to go through some acrobatics here since Java's byte array uses 
@@ -343,5 +342,11 @@ object TestKeyValueStores {
   val CacheSize = 10
   val BatchSize = 5
   @Parameters
-  def parameters: java.util.Collection[Array[String]] = Arrays.asList(Array("leveldb", "cache"), Array("leveldb", "serde"), Array("leveldb", "cache-and-serde"), Array("leveldb", "none"), Array("inmemory", "cache"), Array("inmemory", "serde"), Array("inmemory", "cache-and-serde"), Array("inmemory", "none"), Array("rocksdb","cache"), Array("rocksdb","serde"), Array("rocksdb","cache-and-serde"), Array("rocksdb","none"))
+  def parameters: java.util.Collection[Array[String]] = Arrays.asList(
+      Array("leveldb", "cache"), Array("leveldb", "serde"),
+      Array("leveldb", "cache-and-serde"), Array("leveldb", "none"),
+      Array("inmemory", "cache"), Array("inmemory", "serde"),
+      Array("inmemory", "cache-and-serde"), Array("inmemory", "none"),
+      Array("rocksdb","cache"), Array("rocksdb","serde"),
+      Array("rocksdb","cache-and-serde"), Array("rocksdb","none"))
 }

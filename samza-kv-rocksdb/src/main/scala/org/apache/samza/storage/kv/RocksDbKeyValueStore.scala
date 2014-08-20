@@ -6,7 +6,8 @@ import java.io.File
 import grizzled.slf4j.{Logging, Logger}
 import org.apache.samza.config.Config
 import org.apache.samza.container.SamzaContainerContext
-import org.rocksdb._;
+import org.rocksdb._
+import grizzled.slf4j.Logging
 
 
 /**
@@ -40,7 +41,6 @@ object RocksDbKeyValueStore
 }
 
 class RocksDbKeyValueStore(
-
   val dir: File,
   val options: Options,
   /**
@@ -159,6 +159,7 @@ class RocksDbKeyValueStore(
 
   class RocksDbIterator(iter: RocksIterator) extends KeyValueIterator[Array[Byte], Array[Byte]] {
     private var open = true
+    private var firstValueAccessed = false;
     def close() = {
       open = false
       //iter.close()
@@ -166,33 +167,34 @@ class RocksDbKeyValueStore(
 
     def remove() =  throw new UnsupportedOperationException("RocksDB iterator doesn't support remove"); //iter.remove();
 
-    def hasNext() = {
-      iter.next()
-      val hasNext = iter.isValid
-      iter.prev()
-      hasNext
-    };
+    def hasNext() = iter.isValid
 
+    //The iterator is already pointing to the next element
     protected def peekKey() = {
-      iter.next()
-      val key = iter.key()
-      iter.prev()
-      key
+     getEntry().getKey
     }
 
-    def next() = {
-      if (!hasNext()) {
-        throw new NoSuchElementException
-      }
-
-      iter.next
+    protected def getEntry() = {
       val key = iter.key
       val value = iter.value
-      metrics.bytesRead.inc(key.size)
-      if (value != null) {
-        metrics.bytesRead.inc(value.size)
-      }
       new Entry(key, value)
+    }
+
+    //By virtue of how RocksdbIterator is implemented, the implementation of our iterator is slighty different from standard java iterator
+    //next will always point to the current element, when next is called, we return the
+    //current element we are pointing to and advance the iterator to the next location (which may or may not be valid - this will surface
+    //when the next next() call is made, the isValid will fail)
+    def next() = {
+     if(!hasNext())
+       throw new NoSuchElementException
+
+      val entry = getEntry()
+      iter.next
+      metrics.bytesRead.inc(entry.getKey.size)
+      if (entry.getValue != null) {
+        metrics.bytesRead.inc(entry.getValue.size)
+      }
+      entry
     }
 
     override def finalize() {
@@ -207,7 +209,7 @@ class RocksDbKeyValueStore(
     val comparator = lexicographic //if (options.comparator == null) lexicographic else options.comparator
     iter.seek(from)
     override def hasNext() = {
-      iter.isValid && comparator.compare(peekKey, to) < 0
+      super.hasNext() && comparator.compare(peekKey(), to) < 0
     }
   }
 
