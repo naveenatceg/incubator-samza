@@ -33,7 +33,11 @@ allprojects {
     }
     mavenCentral()
     mavenLocal()
-  }
+    flatDir {
+       dirs 'libs'
+    }
+   }
+
 }
 
 apply from: file("gradle/dependency-versions.gradle")
@@ -356,6 +360,7 @@ project(":samza-kv-rocksdb_$scalaVersion") {
     compile project(":samza-core_$scalaVersion")
     compile project(":samza-kv_$scalaVersion")
     compile project(":samza-kv-inmemory_$scalaVersion")
+    compile files("libs/rocksdbjni.jar")
     compile "org.scala-lang:scala-library:$scalaLibVersion"
     compile "org.clapper:grizzled-slf4j_$scalaVersion:$grizzledVersion"
     testCompile "junit:junit:$junitVersion"
