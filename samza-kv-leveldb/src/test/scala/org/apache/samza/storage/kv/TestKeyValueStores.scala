@@ -62,7 +62,7 @@ class TestKeyValueStores(typeOfStore: String, storeConfig: String) {
       case "inmemory" =>
         new InMemoryKeyValueStore
       case "rocksdb" =>
-        new RocksDbKeyValueStore (dir, new org.rocksdb.Options().setCreateIfMissing(true))
+        new RocksDbKeyValueStore (dir, new org.rocksdb.Options().setCreateIfMissing(true).setCompressionType(org.rocksdb.CompressionType.SNAPPY_COMPRESSION))
       case _ =>
         throw new IllegalArgumentException("Type of store undefined: " + typeOfStore)
     }

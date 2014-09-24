@@ -23,7 +23,7 @@ include \
   'samza-kv',
   'samza-kv-inmemory',
   'samza-kv-leveldb',
-  'samza-kv-rocksdb'
+  'samza-kv-rocksdb',
   'samza-log4j',
   'samza-serializers',
   'samza-shell',
