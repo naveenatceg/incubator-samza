@@ -22,8 +22,8 @@ object RocksDbKeyValueStore
     val options = new Options();
 
     // Cache size and write buffer size are specified on a per-container basis.
-    options.setCacheSize(cacheSize / containerContext.partitions.size)
-    options.setWriteBufferSize((writeBufSize / containerContext.partitions.size).toInt)
+    options.setCacheSize(cacheSize / containerContext.taskNames.size)
+    options.setWriteBufferSize((writeBufSize / containerContext.taskNames.size).toInt)
     options.setBlockSize(storeConfig.getInt("rocksdb.block.size.bytes", 4096))
     options.setCompressionType(
       storeConfig.get("rocksdb.compression", "snappy") match {
@@ -33,6 +33,11 @@ object RocksDbKeyValueStore
           logger.warn("Unknown rocksdb.compression codec %s, defaulting to Snappy" format storeConfig.get("rocksdb.compression", "snappy"))
           CompressionType.SNAPPY_COMPRESSION
       })
+    options.setCompactionStyle(CompactionStyle.UNIVERSAL);
+    options.setFilter(new BloomFilter);
+    options.setWriteBufferSize(64*1024*1024)
+    options.setMaxWriteBufferNumber(3)
+    options.setCacheSize(128*1024*1024)
     options.setCreateIfMissing(true)
     options.setErrorIfExists(true)
     options
@@ -80,7 +85,8 @@ class RocksDbKeyValueStore(
   }
 
   def putAll(entries: java.util.List[Entry[Array[Byte], Array[Byte]]]) {
-    val batch = new WriteBatch()
+
+    //val batch = new WriteBatch()
     val iter = entries.iterator
     var wrote = 0
     var deletes = 0
@@ -89,15 +95,17 @@ class RocksDbKeyValueStore(
       val curr = iter.next()
       if (curr.getValue == null) {
         deletes += 1
-        batch.remove(curr.getKey)
+        db.remove(curr.getKey);
+        //batch.remove(curr.getKey)
       } else {
         val key = curr.getKey
         val value = curr.getValue
         metrics.bytesWritten.inc(key.size + value.size)
-        batch.put(key, value)
+        db.put(key,value)
+        //batch.put(key, value)
       }
     }
-    db.write(new WriteOptions(), batch)
+    //db.write(new WriteOptions(), batch)
     metrics.puts.inc(wrote)
     metrics.deletes.inc(deletes)
     deletesSinceLastCompaction += deletes
@@ -162,7 +170,7 @@ class RocksDbKeyValueStore(
     private var firstValueAccessed = false;
     def close() = {
       open = false
-      //iter.close()
+       iter.dispose()
     }
 
     def remove() =  throw new UnsupportedOperationException("RocksDB iterator doesn't support remove"); //iter.remove();
@@ -182,7 +190,7 @@ class RocksDbKeyValueStore(
 
     //By virtue of how RocksdbIterator is implemented, the implementation of our iterator is slighty different from standard java iterator
     //next will always point to the current element, when next is called, we return the
-    //current element we are pointing to and advance the iterator to the next location (which may or may not be valid - this will surface
+    //current element we are pointing to and advance the iterator to the next location (The new location may or may not be valid - this will surface
     //when the next next() call is made, the isValid will fail)
     def next() = {
      if(!hasNext())

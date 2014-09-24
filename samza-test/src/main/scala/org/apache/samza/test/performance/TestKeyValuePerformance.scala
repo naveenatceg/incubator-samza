@@ -119,9 +119,7 @@ object TestKeyValuePerformance extends Logging {
       }
 
       test.testAllWithDeletes(db, numLoops, messagesPerBatch, messageSizeBytes)
-
       info("Cleaning up output directory for %s." format storeName)
-
       Util.rm(output)
     }
   }
