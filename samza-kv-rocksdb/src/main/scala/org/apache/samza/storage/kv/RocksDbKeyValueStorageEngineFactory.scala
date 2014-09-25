@@ -9,9 +9,6 @@ import org.apache.samza.storage.kv._
 import org.apache.samza.system.SystemStreamPartition
 
 
-/**
- * Created by nsomasun on 8/8/14.
- */
 class RocksDbKeyValueStorageEngineFactory [K, V] extends BaseKeyValueStorageEngineFactory[K, V]
 {
   /**

@@ -10,9 +10,6 @@ import org.rocksdb._
 import grizzled.slf4j.Logging
 
 
-/**
- * Created by nsomasun on 8/8/14.
- */
 object RocksDbKeyValueStore
 {
   private lazy val logger = Logger(classOf[RocksDbKeyValueStore])
@@ -35,7 +32,6 @@ object RocksDbKeyValueStore
       })
     options.setCompactionStyle(CompactionStyle.UNIVERSAL);
     options.setFilter(new BloomFilter);
-    options.setWriteBufferSize(64*1024*1024)
     options.setMaxWriteBufferNumber(3)
     options.setCacheSize(128*1024*1024)
     options.setCreateIfMissing(true)
@@ -160,7 +156,6 @@ class RocksDbKeyValueStore(
 
   def close() {
     trace("Closing.")
-
     db.close()
   }
 
