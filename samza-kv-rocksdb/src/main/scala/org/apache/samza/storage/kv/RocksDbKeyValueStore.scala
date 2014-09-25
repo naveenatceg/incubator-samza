@@ -58,7 +58,6 @@ class RocksDbKeyValueStore(
 
 
   def get(key: Array[Byte]): Array[Byte] = {
-    maybeCompact
     metrics.gets.inc
     require(key != null, "Null key not allowed.")
     val found = db.get(key)
@@ -80,6 +79,7 @@ class RocksDbKeyValueStore(
     }
   }
 
+  //Write batch from RocksDB API is not used currently because of:
   def putAll(entries: java.util.List[Entry[Array[Byte], Array[Byte]]]) {
 
     //val batch = new WriteBatch()
@@ -113,45 +113,21 @@ class RocksDbKeyValueStore(
   }
 
   def range(from: Array[Byte], to: Array[Byte]): KeyValueIterator[Array[Byte], Array[Byte]] = {
-    maybeCompact
     metrics.ranges.inc
     require(from != null && to != null, "Null bound not allowed.")
     new RocksDbRangeIterator(db.newIterator(),from,to)
   }
 
   def all(): KeyValueIterator[Array[Byte], Array[Byte]] = {
-    maybeCompact
     metrics.alls.inc
     val iter = db.newIterator()
     iter.seekToFirst()
     new RocksDbIterator(iter)
   }
 
-  /**
-   * Trigger a complete compaction on the LevelDB store if there have been at
-   * least deleteCompactionThreshold deletes since the last compaction.
-   */
-  def maybeCompact = {
-    if (deleteCompactionThreshold >= 0 && deletesSinceLastCompaction >= deleteCompactionThreshold) {
-      compact
-    }
-  }
-
-  /**
-   * Trigger a complete compaction of the LevelDB store.
-   */
-  def compact {
-    // According to LevelDB's docs:
-    // begin==NULL is treated as a key before all keys in the database.
-    // end==NULL is treated as a key after all keys in the database.
-    //db.compactRange(null, null)
-    //deletesSinceLastCompaction = 0
-  }
-
   def flush {
     metrics.flushes.inc
-    // TODO can't find a flush for leveldb
-    trace("Flushing, but flush in RocksDbKeyValueStore doesn't do anything.")
+    trace("Flush in RocksDbKeyValueStore is not supported, ignoring")
   }
 
   def close() {
