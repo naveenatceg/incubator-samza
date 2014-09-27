@@ -12,15 +12,15 @@ object TestRocksDbApi
     var db = RocksDB.open(options, "/tmp/testdbpath");
     options.setCompressionType(CompressionType.LZ4HC_COMPRESSION).setCreateIfMissing(true);
     val filter = new BloomFilter(10);
-    options.setCreateIfMissing(true).createStatistics().setWriteBufferSize(8 * SizeUnit.KB).setMaxWriteBufferNumber(3).setDisableSeekCompaction(
-      true).setBlockSize(64 * SizeUnit.KB).setMaxBackgroundCompactions(10).setFilter(filter);
+    options.setCreateIfMissing(true).createStatistics().setWriteBufferSize(8 * SizeUnit.KB).setMaxWriteBufferNumber(3)
+            //.setBlockSize(64 * SizeUnit.KB).setMaxBackgroundCompactions(10).setFilter(filter);
     val stats = options.statisticsPtr();
 
     assert(options.createIfMissing() == true);
     assert(options.writeBufferSize() == 8 * SizeUnit.KB);
     assert(options.maxWriteBufferNumber() == 3);
-    assert(options.disableSeekCompaction() == true);
-    assert(options.blockSize() == 64 * SizeUnit.KB);
+    //assert(options.disableSeekCompaction() == true);
+    //assert(options.blockSize() == 64 * SizeUnit.KB);
     assert(options.maxBackgroundCompactions() == 10);
 
     assert(options.memTableFactoryName().equals("SkipListFactory"));

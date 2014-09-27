@@ -3,11 +3,10 @@ package org.apache.samza.storage.kv
 
 import java.io.File
 
-import grizzled.slf4j.{Logging, Logger}
+import grizzled.slf4j.{Logger, Logging}
 import org.apache.samza.config.Config
 import org.apache.samza.container.SamzaContainerContext
 import org.rocksdb._
-import grizzled.slf4j.Logging
 
 
 object RocksDbKeyValueStore
@@ -19,9 +18,9 @@ object RocksDbKeyValueStore
     val options = new Options();
 
     // Cache size and write buffer size are specified on a per-container basis.
-    options.setCacheSize(cacheSize / containerContext.taskNames.size)
     options.setWriteBufferSize((writeBufSize / containerContext.taskNames.size).toInt)
-    options.setBlockSize(storeConfig.getInt("rocksdb.block.size.bytes", 4096))
+    val cacheSizePerContainer = cacheSize / containerContext.taskNames.size
+    val blockSize = storeConfig.getInt("rocksdb.block.size.bytes", 4096)
     options.setCompressionType(
       storeConfig.get("rocksdb.compression", "snappy") match {
         case "snappy" => CompressionType.SNAPPY_COMPRESSION
@@ -30,10 +29,15 @@ object RocksDbKeyValueStore
           logger.warn("Unknown rocksdb.compression codec %s, defaulting to Snappy" format storeConfig.get("rocksdb.compression", "snappy"))
           CompressionType.SNAPPY_COMPRESSION
       })
+
+    val table_options = new BlockBasedTableConfig()
+    table_options.setBlockCacheSize(blockSize)
+                     .setFilterBitsPerKey(10)
+                     .setBlockSize(blockSize)
+
+    options.setTableFormatConfig(table_options);
     options.setCompactionStyle(CompactionStyle.UNIVERSAL);
-    options.setFilter(new BloomFilter);
     options.setMaxWriteBufferNumber(3)
-    options.setCacheSize(128*1024*1024)
     options.setCreateIfMissing(true)
     options.setErrorIfExists(true)
     options
