@@ -343,10 +343,19 @@ object TestKeyValueStores {
   val BatchSize = 5
   @Parameters
   def parameters: java.util.Collection[Array[String]] = Arrays.asList(
-      Array("leveldb", "cache"), Array("leveldb", "serde"),
-      Array("leveldb", "cache-and-serde"), Array("leveldb", "none"),
-      Array("inmemory", "cache"), Array("inmemory", "serde"),
-      Array("inmemory", "cache-and-serde"), Array("inmemory", "none"),
-      Array("rocksdb","cache"), Array("rocksdb","serde"),
-      Array("rocksdb","cache-and-serde"), Array("rocksdb","none"))
+      //LevelDB
+      Array("leveldb", "cache"),
+      Array("leveldb", "serde"),
+      Array("leveldb", "cache-and-serde"),
+      Array("leveldb", "none"),
+      //Inmemory
+      Array("inmemory", "cache"),
+      Array("inmemory", "serde"),
+      Array("inmemory", "cache-and-serde"),
+      Array("inmemory", "none"),
+      //RocksDB
+      Array("rocksdb","cache"),
+      Array("rocksdb","serde"),
+      Array("rocksdb","cache-and-serde"),
+      Array("rocksdb","none"))
 }
