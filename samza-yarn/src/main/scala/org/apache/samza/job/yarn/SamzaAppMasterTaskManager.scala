@@ -21,6 +21,8 @@ package org.apache.samza.job.yarn
 
 import java.nio.ByteBuffer
 import java.util.Collections
+import org.apache.samza.utilj.UtilJ
+
 import scala.collection.JavaConversions._
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.DataOutputBuffer
@@ -41,9 +43,9 @@ import org.apache.samza.config.YarnConfig
 import org.apache.samza.config.YarnConfig.Config2Yarn
 import org.apache.samza.job.CommandBuilder
 import org.apache.samza.job.ShellCommandBuilder
-import org.apache.samza.util.Util
-import org.apache.samza.util.Logging
+import org.apache.samza.util.{Util, Logging}
 import org.apache.samza.coordinator.JobCoordinator
+import org.apache.samza.config.JobConfig.Config2Job
 
 object SamzaAppMasterTaskManager {
   val DEFAULT_CONTAINER_MEM = 1024
@@ -63,13 +65,7 @@ case class TaskFailure(val count: Int, val lastFailure: Long)
 class SamzaAppMasterTaskManager(clock: () => Long, config: Config, state: SamzaAppMasterState, amClient: AMRMClientAsync[ContainerRequest], conf: YarnConfiguration) extends YarnAppMasterListener with Logging {
   import SamzaAppMasterTaskManager._
 
-  state.taskCount = config
-    .getTaskCount
-    .getOrElse({
-      info("No %s specified. Defaulting to one container." format YarnConfig.TASK_COUNT)
-      1
-    })
-  state.jobCoordinator = JobCoordinator(config, state.taskCount)
+  state.taskCount = config.getContainerCount
 
   var taskFailures = Map[Int, TaskFailure]()
   var tooManyFailedContainers = false

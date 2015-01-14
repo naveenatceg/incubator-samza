@@ -28,7 +28,6 @@ import org.apache.samza.storage.kv.KeyValueStore
 import org.apache.samza.storage.kv.KeyValueStorageEngine
 import org.apache.samza.storage.StorageEngineFactory
 import org.apache.samza.util.CommandLine
-import org.apache.samza.util.Util
 import org.apache.samza.serializers.ByteSerde
 import org.apache.samza.Partition
 import org.apache.samza.SamzaException
@@ -38,6 +37,8 @@ import org.apache.samza.system.SystemProducer
 import org.apache.samza.serializers.SerdeManager
 import java.io.File
 import java.util.UUID
+import org.apache.samza.util.Util
+
 
 /**
  * A simple CLI-based tool for running various key-value performance tests.

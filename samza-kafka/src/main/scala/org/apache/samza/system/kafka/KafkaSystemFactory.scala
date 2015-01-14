@@ -19,6 +19,9 @@
 
 package org.apache.samza.system.kafka
 
+import java.util.Properties
+
+import org.apache.samza.SamzaException
 import org.apache.samza.util.{Logging, KafkaUtil, ExponentialSleepStrategy, ClientUtilTopicMetadataStore}
 import org.apache.samza.config.Config
 import org.apache.samza.metrics.MetricsRegistry
@@ -27,7 +30,6 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.samza.system.SystemFactory
 import org.I0Itec.zkclient.ZkClient
 import kafka.utils.ZKStringSerializer
-
 
 class KafkaSystemFactory extends SystemFactory with Logging {
   def getConsumer(systemName: String, config: Config, registry: MetricsRegistry) = {
@@ -88,8 +90,18 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     val consumerConfig = config.getKafkaSystemConsumerConfig(systemName, clientId)
     val timeout = consumerConfig.socketTimeoutMs
     val bufferSize = consumerConfig.socketReceiveBufferBytes
+    val zkConnect = Option(consumerConfig.zkConnect)
+      .getOrElse(throw new SamzaException("no zookeeper.connect defined in config"))
+    val connectZk = () => {
+      new ZkClient(zkConnect, 6000, 6000, ZKStringSerializer)
+    }
+    // checkpoint topic will go away, and we'll just use the coordinator
+    // stream.
+    val coordinatorStreamProperties = getCheckpointTopicProperties(config)
+    val coordinatorStreamReplicationFactor = config
+      .getCheckpointReplicationFactor.getOrElse("3")
+      .toInt
     val storeToChangelog = config.getKafkaChangelogEnabledStores()
-
     // Construct the meta information for each topic, if the replication factor is not defined, we use 2 as the number of replicas for the change log stream.
     val topicMetaInformation = storeToChangelog.map{case (storeName, topicName) =>
     {
@@ -102,10 +114,23 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     new KafkaSystemAdmin(
       systemName,
       bootstrapServers,
+      connectZk,
+      coordinatorStreamProperties,
+      coordinatorStreamReplicationFactor,
       timeout,
       bufferSize,
       clientId,
-      () => new ZkClient(consumerConfig.zkConnect, 6000, 6000, ZKStringSerializer),
       topicMetaInformation)
   }
+
+  def getCheckpointTopicProperties(config: Config) = {
+    val segmentBytes = config
+            .getCheckpointSegmentBytes
+            .getOrElse("26214400")
+
+    (new Properties /: Map(
+      "cleanup.policy" -> "compact",
+      "segment.bytes" -> segmentBytes)) { case (props, (k, v)) => props.put(k, v); props }
+  }
+
 }
