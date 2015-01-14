@@ -31,8 +31,9 @@ import org.apache.samza.task.TaskContext
 import org.apache.samza.system.IncomingMessageEnvelope
 import org.apache.samza.util.Logging
 import org.junit.Test
-
 import scala.collection.JavaConversions._
+import org.apache.samza.coordinator.stream.MockCoordinatorStreamSystemFactory
+import org.apache.samza.job.JobRunner
 
 /**
  * A simple unit test that drives the TestPerformanceTask. This unit test can
@@ -57,7 +58,7 @@ import scala.collection.JavaConversions._
  * samza.task.max.messages
  * <pre>
  *
- * For example, you might specify wish to process 10000 messages simulated 
+ * For example, you might specify wish to process 10000 messages simulated
  * from two input streams on one broker:
  *
  * <pre>
@@ -69,7 +70,7 @@ import scala.collection.JavaConversions._
  *   -Psamza.task.max.messages=10000
  * <pre>
  */
-class TestSamzaContainerPerformance extends Logging{
+class TestSamzaContainerPerformance extends Logging {
   val consumerThreadCount = System.getProperty("samza.mock.consumer.thread.count", "12").toInt
   val messagesPerBatch = System.getProperty("samza.mock.messages.per.batch", "5000").toInt
   val streamCount = System.getProperty("samza.mock.input.streams", "1000").toInt
@@ -77,12 +78,10 @@ class TestSamzaContainerPerformance extends Logging{
   val brokerSleepMs = System.getProperty("samza.mock.broker.sleep.ms", "1").toInt
   var logInterval = System.getProperty("samza.task.log.interval", "10000").toInt
   var maxMessages = System.getProperty("samza.task.max.messages", "10000000").toInt
-
-  val jobFactory = new ThreadJobFactory
-
   val jobConfig = Map(
-    "job.factory.class" -> jobFactory.getClass.getCanonicalName,
+    "job.factory.class" -> classOf[ThreadJobFactory].getCanonicalName,
     "job.name" -> "test-container-performance",
+    "job.coordinator.system" -> "coordinator",
     "task.class" -> classOf[TestPerformanceTask].getName,
     "task.inputs" -> (0 until streamCount).map(i => "mock.stream" + i).mkString(","),
     "task.log.interval" -> logInterval.toString,
@@ -91,15 +90,14 @@ class TestSamzaContainerPerformance extends Logging{
     "systems.mock.partitions.per.stream" -> partitionsPerStreamCount.toString,
     "systems.mock.messages.per.batch" -> messagesPerBatch.toString,
     "systems.mock.consumer.thread.count" -> consumerThreadCount.toString,
-    "systems.mock.broker.sleep.ms" -> brokerSleepMs.toString)
+    "systems.mock.broker.sleep.ms" -> brokerSleepMs.toString,
+    "systems.coordinator.samza.factory" -> classOf[MockCoordinatorStreamSystemFactory].getCanonicalName)
 
   @Test
   def testContainerPerformance {
     info("Testing performance with configuration: %s" format jobConfig)
 
-    val job = jobFactory
-      .getJob(new MapConfig(jobConfig))
-      .submit
+    val job = new JobRunner(new MapConfig(jobConfig)).run
 
     job.waitForFinish(Int.MaxValue)
   }

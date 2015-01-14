@@ -46,12 +46,47 @@ import org.apache.samza.system.SystemFactory
 import org.apache.samza.coordinator.server.HttpServer
 import org.apache.samza.checkpoint.CheckpointManager
 import org.apache.samza.coordinator.server.JobServlet
+import org.apache.samza.config.SystemConfig.Config2System
+import org.apache.samza.config.ConfigException
+import org.apache.samza.config.SystemConfig
+import org.apache.samza.system.SystemStreamPartitionIterator
+import org.apache.samza.coordinator.stream.CoordinatorStreamMessage
+import org.apache.samza.coordinator.stream.CoordinatorStreamMessage.SetConfig
+import org.apache.samza.config.MapConfig
+import org.apache.samza.coordinator.stream.CoordinatorStreamSystemFactory
+import org.apache.samza.config.ConfigRewriter
 
+/**
+ * Helper companion object that is responsible for wiring up a JobCoordinator
+ * given a Config object.
+ */
 object JobCoordinator extends Logging {
+  /**
+   * @param coordinatorSystemConfig A config object that contains job.name,
+   * job.id, and all system.&lt;job-coordinator-system-name&gt;.*
+   * configuration. The method will use this config to read all configuration
+   * from the coordinator stream, and instantiate a JobCoordinator.
+   */
+  def apply(coordinatorSystemConfig: Config) = {
+    val coordinatorSystemConsumer = new CoordinatorStreamSystemFactory().getCoordinatorStreamSystemConsumer(coordinatorSystemConfig, new MetricsRegistryMap)
+    info("Registering coordinator system stream.")
+    coordinatorSystemConsumer.register
+    debug("Starting coordinator system stream.")
+    coordinatorSystemConsumer.start
+    debug("Bootstrapping coordinator system stream.")
+    coordinatorSystemConsumer.bootstrap
+    debug("Stopping coordinator system stream.")
+    coordinatorSystemConsumer.stop
+    val config = coordinatorSystemConsumer.getConfig
+    info("Got config: %s" format config)
+    getJobCoordinator(rewriteConfig(config))
+  }
+
   /**
    * Build a JobCoordinator using a Samza job's configuration.
    */
-  def apply(config: Config, containerCount: Int) = {
+  def getJobCoordinator(config: Config) = {
+    val containerCount = config.getContainerCount
     val jobModel = buildJobModel(config, containerCount)
     val server = new HttpServer
     server.addServlet("/*", new JobServlet(jobModel))
@@ -112,6 +147,29 @@ object JobCoordinator extends Logging {
     val factoryString = config.getSystemStreamPartitionGrouperFactory
     val factory = Util.getObj[SystemStreamPartitionGrouperFactory](factoryString)
     factory.getSystemStreamPartitionGrouper(config)
+  }
+
+  /**
+   * Re-writes configuration using a ConfigRewriter, if one is defined. If
+   * there is no ConfigRewriter defined for the job, then this method is a
+   * no-op.
+   *
+   * @param config The config to re-write.
+   */
+  def rewriteConfig(config: Config): Config = {
+    def rewrite(c: Config, rewriterName: String): Config = {
+      val klass = config
+        .getConfigRewriterClass(rewriterName)
+        .getOrElse(throw new SamzaException("Unable to find class config for config rewriter %s." format rewriterName))
+      val rewriter = Util.getObj[ConfigRewriter](klass)
+      info("Re-writing config with " + rewriter)
+      rewriter.rewrite(rewriterName, c)
+    }
+
+    config.getConfigRewriters match {
+      case Some(rewriters) => rewriters.split(",").foldLeft(config)(rewrite(_, _))
+      case _ => config
+    }
   }
 
   /**
@@ -207,19 +265,23 @@ class JobCoordinator(
   /**
    * HTTP server used to serve a Samza job's container model to SamzaContainers when they start up.
    */
-  val server: HttpServer) extends Logging {
+  val server: HttpServer = null) extends Logging {
 
   debug("Got job model: %s." format jobModel)
 
   def start {
-    debug("Starting HTTP server.")
-    server.start
-    info("Startd HTTP server: %s" format server.getUrl)
+    if (server != null) {
+      debug("Starting HTTP server.")
+      server.start
+      info("Startd HTTP server: %s" format server.getUrl)
+    }
   }
 
   def stop {
-    debug("Stopping HTTP server.")
-    server.stop
-    info("Stopped HTTP server.")
+    if (server != null) {
+      debug("Stopping HTTP server.")
+      server.stop
+      info("Stopped HTTP server.")
+    }
   }
 }

@@ -27,6 +27,13 @@ import org.apache.samza.system.SystemStream
 import java.util.Random
 import org.apache.samza.job.model.JobModel
 import java.io.InputStreamReader
+import org.apache.samza.config.Config
+import org.apache.samza.config.SystemConfig
+import org.apache.samza.config.JobConfig.Config2Job
+import org.apache.samza.config.ConfigException
+import org.apache.samza.config.MapConfig
+import scala.collection.JavaConversions._
+import org.apache.samza.config.JobConfig
 
 object Util extends Logging {
   val random = new Random
@@ -123,5 +130,35 @@ object Util extends Logging {
     val body = Iterator.continually(br.readLine()).takeWhile(_ != null).mkString
     br.close
     body
+  }
+
+  /**
+   * Generates a coordinator stream name based off of the job name and job id
+   * for the jobd. The format is of the stream name will be
+   * __samza_coordinator_&lt;JOBNAME&gt;_&lt;JOBID&gt;.
+   */
+  def getCoordinatorStreamName(jobName: String, jobId: String) = {
+    "__samza_coordinator_%s_%s" format (jobName.replaceAll("_", "-"), jobId.replaceAll("_", "-"))
+  }
+
+  /**
+   * Get a job's name and ID given a config. Job ID is defaulted to 1 if not
+   * defined in the config, and job name must be defined in config.
+   *
+   * @return A tuple of (jobName, jobId)
+   */
+  def getJobNameAndId(config: Config) = {
+    (config.getName.getOrElse(throw new ConfigException("Missing required config: job.name")), config.getJobId.getOrElse("1"))
+  }
+
+  /**
+   * Given a job's full config object, build a subset config which includes
+   * only the job name, job id, and system config for the coordinator stream.
+   */
+  def buildCoordinatorStreamConfig(config: Config) = {
+    val (jobName, jobId) = getJobNameAndId(config)
+    // Build a map with just the system config and job.name/job.id. This is what's required to start the JobCoordinator.
+    new MapConfig(config.subset(SystemConfig.SYSTEM_PREFIX format config.getCoordinatorSystemName, false) ++
+      Map[String, String](JobConfig.JOB_NAME -> jobName, JobConfig.JOB_ID -> jobId))
   }
 }

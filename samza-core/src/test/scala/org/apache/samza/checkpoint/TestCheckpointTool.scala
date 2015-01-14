@@ -31,8 +31,9 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.junit.AssertionsForJUnit
 import org.scalatest.mock.MockitoSugar
-
 import scala.collection.JavaConversions._
+import org.apache.samza.config.JobConfig
+import org.apache.samza.coordinator.stream.MockCoordinatorStreamSystemFactory
 
 object TestCheckpointTool {
   var checkpointManager: CheckpointManager = null
@@ -62,15 +63,17 @@ class TestCheckpointTool extends AssertionsForJUnit with MockitoSugar {
   @Before
   def setup {
     config = new MapConfig(Map(
+      JobConfig.JOB_NAME -> "test",
+      JobConfig.JOB_COORDINATOR_SYSTEM -> "coordinator",
       TaskConfig.INPUT_STREAMS -> "test.foo",
       TaskConfig.CHECKPOINT_MANAGER_FACTORY -> classOf[MockCheckpointManagerFactory].getName,
-      SystemConfig.SYSTEM_FACTORY.format("test") -> classOf[MockSystemFactory].getName
+      SystemConfig.SYSTEM_FACTORY.format("test") -> classOf[MockSystemFactory].getName,
+      SystemConfig.SYSTEM_FACTORY.format("coordinator") -> classOf[MockCoordinatorStreamSystemFactory].getName
     ))
     val metadata = new SystemStreamMetadata("foo", Map[Partition, SystemStreamPartitionMetadata](
       new Partition(0) -> new SystemStreamPartitionMetadata("0", "100", "101"),
       new Partition(1) -> new SystemStreamPartitionMetadata("0", "200", "201")
     ))
-
     TestCheckpointTool.checkpointManager = mock[CheckpointManager]
     TestCheckpointTool.systemAdmin = mock[SystemAdmin]
     when(TestCheckpointTool.systemAdmin.getSystemStreamMetadata(Set("foo")))
@@ -79,7 +82,6 @@ class TestCheckpointTool extends AssertionsForJUnit with MockitoSugar {
       .thenReturn(new Checkpoint(Map(new SystemStreamPartition("test", "foo", p0) -> "1234")))
     when(TestCheckpointTool.checkpointManager.readLastCheckpoint(tn1))
       .thenReturn(new Checkpoint(Map(new SystemStreamPartition("test", "foo", p1) -> "4321")))
-
   }
 
   @Test

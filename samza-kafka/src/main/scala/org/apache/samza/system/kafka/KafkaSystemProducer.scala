@@ -43,6 +43,9 @@ class KafkaSystemProducer(
   }
 
   def stop() {
+    // Flush any remaining buffered messages before shutting down.
+    sourceBuffers.keySet.foreach(flush(_))
+
     if (producer != null) {
       producer.close
     }
@@ -84,7 +87,9 @@ class KafkaSystemProducer(
             debug("Created a new producer for system %s." format systemName)
           }
 
-          producer.send(buffer: _*)
+          if (buffer.size > 0) {
+            producer.send(buffer: _*)
+          }
           loop.done
           metrics.flushSizes.inc(buffer.size)
         },
