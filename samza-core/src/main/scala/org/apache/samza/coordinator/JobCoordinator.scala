@@ -19,41 +19,30 @@
 
 package org.apache.samza.coordinator
 
+import org.apache.samza.changelog.ChangelogManager
 import org.apache.samza.config.Config
 import org.apache.samza.job.model.JobModel
 import org.apache.samza.SamzaException
 import org.apache.samza.container.grouper.task.GroupByContainerCount
-import org.apache.samza.util.Util
-import org.apache.samza.checkpoint.CheckpointManagerFactory
 import org.apache.samza.container.grouper.stream.SystemStreamPartitionGrouperFactory
 import java.util
 import org.apache.samza.container.TaskName
 import org.apache.samza.util.Logging
-import org.apache.samza.config.TaskConfig.Config2Task
 import org.apache.samza.metrics.MetricsRegistryMap
-import org.apache.samza.config.StorageConfig.Config2Storage
+import org.apache.samza.util.Util
 import scala.collection.JavaConversions._
 import org.apache.samza.config.JobConfig.Config2Job
 import org.apache.samza.config.TaskConfig.Config2Task
-import org.apache.samza.config.SystemConfig.Config2System
 import org.apache.samza.Partition
 import org.apache.samza.job.model.TaskModel
 import org.apache.samza.system.StreamMetadataCache
 import org.apache.samza.system.SystemStreamPartition
-import org.apache.samza.serializers.model.SamzaObjectMapper
-import java.net.URL
 import org.apache.samza.system.SystemFactory
 import org.apache.samza.coordinator.server.HttpServer
-import org.apache.samza.checkpoint.CheckpointManager
+import org.apache.samza.checkpoint.{Checkpoint, CheckpointManager}
 import org.apache.samza.coordinator.server.JobServlet
 import org.apache.samza.config.SystemConfig.Config2System
-import org.apache.samza.config.ConfigException
-import org.apache.samza.config.SystemConfig
-import org.apache.samza.system.SystemStreamPartitionIterator
-import org.apache.samza.coordinator.stream.CoordinatorStreamMessage
-import org.apache.samza.coordinator.stream.CoordinatorStreamMessage.SetConfig
-import org.apache.samza.config.MapConfig
-import org.apache.samza.coordinator.stream.CoordinatorStreamSystemFactory
+import org.apache.samza.coordinator.stream.{CoordinatorStreamSystemConsumer, CoordinatorStreamSystemProducer, CoordinatorStreamMessage, CoordinatorStreamSystemFactory}
 import org.apache.samza.config.ConfigRewriter
 
 /**
@@ -61,6 +50,8 @@ import org.apache.samza.config.ConfigRewriter
  * given a Config object.
  */
 object JobCoordinator extends Logging {
+  var coordinatorSystemConsumer: CoordinatorStreamSystemConsumer = null
+  var coordinatorSystemProducer: CoordinatorStreamSystemProducer = null
   /**
    * @param coordinatorSystemConfig A config object that contains job.name,
    * job.id, and all system.&lt;job-coordinator-system-name&gt;.*
@@ -68,7 +59,8 @@ object JobCoordinator extends Logging {
    * from the coordinator stream, and instantiate a JobCoordinator.
    */
   def apply(coordinatorSystemConfig: Config) = {
-    val coordinatorSystemConsumer = new CoordinatorStreamSystemFactory().getCoordinatorStreamSystemConsumer(coordinatorSystemConfig, new MetricsRegistryMap)
+    coordinatorSystemConsumer = new CoordinatorStreamSystemFactory().getCoordinatorStreamSystemConsumer(coordinatorSystemConfig, new MetricsRegistryMap)
+    coordinatorSystemProducer = new CoordinatorStreamSystemFactory().getCoordinatorStreamSystemProducer(coordinatorSystemConfig, new MetricsRegistryMap)
     info("Registering coordinator system stream.")
     coordinatorSystemConsumer.register
     debug("Starting coordinator system stream.")
@@ -87,28 +79,21 @@ object JobCoordinator extends Logging {
    */
   def getJobCoordinator(config: Config) = {
     val containerCount = config.getContainerCount
-    val jobModel = buildJobModel(config, containerCount)
+    def jobModelGenerator(): JobModel = buildJobModel(config, containerCount)
     val server = new HttpServer
-    server.addServlet("/*", new JobServlet(jobModel))
-    new JobCoordinator(jobModel, server)
+    server.addServlet("/*", new JobServlet(jobModelGenerator))
+    new JobCoordinator(jobModelGenerator(), server)
   }
 
   /**
    * Gets a CheckpointManager from the configuration.
    */
-  def getCheckpointManager(config: Config) = {
-    config.getCheckpointManagerFactory match {
-      case Some(checkpointFactoryClassName) =>
-        Util
-          .getObj[CheckpointManagerFactory](checkpointFactoryClassName)
-          .getCheckpointManager(config, new MetricsRegistryMap)
-      case _ =>
-        if (!config.getStoreNames.isEmpty) {
-          throw new SamzaException("Storage factories configured, but no checkpoint manager has been specified.  " +
-            "Unable to start job as there would be no place to store changelog partition mapping.")
-        }
-        null
-    }
+  def getCheckpointManager() = {
+    new CheckpointManager(coordinatorSystemProducer, coordinatorSystemConsumer)
+  }
+
+  def getChangelogManager() = {
+    new ChangelogManager(coordinatorSystemProducer, coordinatorSystemConsumer)
   }
 
   /**
@@ -178,15 +163,18 @@ object JobCoordinator extends Logging {
   def buildJobModel(config: Config, containerCount: Int) = {
     // TODO containerCount should go away when we generalize the job coordinator, 
     // and have a non-yarn-specific way of specifying container count.
-    val checkpointManager = getCheckpointManager(config)
+    val changelogManager = getChangelogManager()
     val allSystemStreamPartitions = getInputStreamPartitions(config)
     val grouper = getSystemStreamPartitionGrouper(config)
-    val previousChangelogeMapping = if (checkpointManager != null) {
-      checkpointManager.start
-      checkpointManager.readChangeLogPartitionMapping
+    val previousChangelogeMapping = if (changelogManager != null) {
+      changelogManager.start
+      changelogManager.readChangeLogPartitionMapping
     } else {
       new util.HashMap[TaskName, java.lang.Integer]()
     }
+
+    // If no mappings are present(first time the job is running) we return -1, this will allow 0 to be the first change
+    // mapping.
     var maxChangelogPartitionId = previousChangelogeMapping
       .values
       .map(_.toInt)
@@ -195,6 +183,8 @@ object JobCoordinator extends Logging {
       .lastOption
       .getOrElse(-1)
 
+    val checkpointManager = getCheckpointManager()
+    checkpointManager.start
     // Assign all SystemStreamPartitions to TaskNames.
     val taskModels = {
       val groups = grouper.group(allSystemStreamPartitions)
@@ -202,8 +192,15 @@ object JobCoordinator extends Logging {
       groups
         .map {
           case (taskName, systemStreamPartitions) =>
+            checkpointManager.register(taskName)
+            val checkpoint = Option(checkpointManager.readLastCheckpoint(taskName)).getOrElse(new Checkpoint(new util.HashMap[SystemStreamPartition, String]()))
+            var offsetMap = new util.HashMap[SystemStreamPartition, String]()
+            offsetMap.putAll(checkpoint.getOffsets)
+            // Find the system partitions which don't have a checkpoint and set null for the values for offsets
+            (systemStreamPartitions -- offsetMap.keySet()).foreach(offsetMap += _ -> null)
+
             val changelogPartition = Option(previousChangelogeMapping.get(taskName)) match {
-              case Some(changelogPartitionId) => new Partition(changelogPartitionId)
+                case Some(changelogPartitionId) => new Partition(changelogPartitionId)
               case _ =>
                 // If we've never seen this TaskName before, then assign it a 
                 // new changelog.
@@ -211,14 +208,14 @@ object JobCoordinator extends Logging {
                 info("New task %s is being assigned changelog partition %s." format (taskName, maxChangelogPartitionId))
                 new Partition(maxChangelogPartitionId)
             }
-            new TaskModel(taskName, systemStreamPartitions, changelogPartition)
+            new TaskModel(taskName, offsetMap, changelogPartition)
         }
         .toSet
     }
 
-    // Save the changelog mapping back to the checkpoint manager.
-    if (checkpointManager != null) {
-      // newChangelogMapping is the merging of all current task:changelog 
+    // Save the changelog mapping back to the changelog manager
+    if (changelogManager != null) {
+      // newChangelogMapping is the merging of all current task:changelog
       // assignments with whatever we had before (previousChangelogeMapping).
       // We must persist legacy changelog assignments so that 
       // maxChangelogPartitionId always has the absolute max, not the current 
@@ -228,8 +225,8 @@ object JobCoordinator extends Logging {
         taskModel.getTaskName -> Integer.valueOf(taskModel.getChangelogPartition.getPartitionId)
       }).toMap ++ previousChangelogeMapping
       info("Saving task-to-changelog partition mapping: %s" format newChangelogMapping)
-      checkpointManager.writeChangeLogPartitionMapping(newChangelogMapping)
-      checkpointManager.stop
+      changelogManager.writeChangeLogPartitionMapping(newChangelogMapping)
+      changelogManager.stop
     }
 
     // Here is where we should put in a pluggable option for the 

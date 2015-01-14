@@ -42,6 +42,10 @@ public class MockCoordinatorStreamSystemFactory implements SystemFactory {
 
   /**
    * Returns a consumer that sends all configs to the coordinator stream.
+   * @param config Along with the configs, you can pass checkpoints and changelog stream messages into the stream.
+   *               The expected pattern is cp:source:taskname -> ssp,offset for checkpoint (Use sspToString util)
+   *                                       ch:source:taskname -> changelogPartition for changelog
+   *               Everything else is processed as normal config
    */
   public SystemConsumer getConsumer(String systemName, Config config, MetricsRegistry registry) {
     String jobName = config.get("job.name");

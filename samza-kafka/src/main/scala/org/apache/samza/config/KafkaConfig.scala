@@ -24,7 +24,6 @@ import java.util.regex.Pattern
 
 import org.apache.samza.util.Util
 import org.apache.samza.util.Logging
-
 import scala.collection.JavaConversions._
 import kafka.consumer.ConsumerConfig
 import java.util.{Properties, UUID}

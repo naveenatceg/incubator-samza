@@ -46,6 +46,7 @@ public class CoordinatorStreamSystemProducer {
   private final SystemStream systemStream;
   private final SystemProducer systemProducer;
   private final SystemAdmin systemAdmin;
+  private boolean isStarted;
 
   public CoordinatorStreamSystemProducer(SystemStream systemStream, SystemProducer systemProducer, SystemAdmin systemAdmin) {
     this(systemStream, systemProducer, systemAdmin, new JsonSerde<List<?>>(), new JsonSerde<Map<String, Object>>());
@@ -73,10 +74,16 @@ public class CoordinatorStreamSystemProducer {
    * Creates the coordinator stream, and starts the system producer.
    */
   public void start() {
+    if(isStarted)
+    {
+      log.info("Coordinator stream producer already started");
+      return;
+    }
     log.info("Creating coordinator stream producer.");
     systemAdmin.createCoordinatorStream(systemStream.getStream());
     log.info("Starting coordinator stream producer.");
     systemProducer.start();
+    isStarted = true;
   }
 
   /**

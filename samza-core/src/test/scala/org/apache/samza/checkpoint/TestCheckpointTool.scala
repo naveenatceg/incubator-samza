@@ -41,8 +41,8 @@ object TestCheckpointTool {
   var systemProducer: SystemProducer = null
   var systemAdmin: SystemAdmin = null
 
-  class MockCheckpointManagerFactory extends CheckpointManagerFactory {
-    override def getCheckpointManager(config: Config, registry: MetricsRegistry) = checkpointManager
+  class MockCheckpointManagerFactory {
+    def getCheckpointManager(config: Config, registry: MetricsRegistry) = checkpointManager
   }
 
   class MockSystemFactory extends SystemFactory {
@@ -86,7 +86,9 @@ class TestCheckpointTool extends AssertionsForJUnit with MockitoSugar {
 
   @Test
   def testReadLatestCheckpoint {
-    new CheckpointTool(config, null).run
+    val checkpointTool = new CheckpointTool(config, null)
+    checkpointTool.setCheckpointManager(TestCheckpointTool.checkpointManager)
+    checkpointTool.run
     verify(TestCheckpointTool.checkpointManager).readLastCheckpoint(tn0)
     verify(TestCheckpointTool.checkpointManager).readLastCheckpoint(tn1)
     verify(TestCheckpointTool.checkpointManager, never()).writeCheckpoint(any(), any())
@@ -97,7 +99,9 @@ class TestCheckpointTool extends AssertionsForJUnit with MockitoSugar {
     val toOverwrite = Map(tn0 -> Map(new SystemStreamPartition("test", "foo", p0) -> "42"),
       tn1 -> Map(new SystemStreamPartition("test", "foo", p1) -> "43"))
 
-    new CheckpointTool(config, toOverwrite).run
+    val checkpointTool = new CheckpointTool(config, toOverwrite)
+    checkpointTool.setCheckpointManager(TestCheckpointTool.checkpointManager)
+    checkpointTool.run
     verify(TestCheckpointTool.checkpointManager)
       .writeCheckpoint(tn0, new Checkpoint(Map(new SystemStreamPartition("test", "foo", p0) -> "42")))
     verify(TestCheckpointTool.checkpointManager)

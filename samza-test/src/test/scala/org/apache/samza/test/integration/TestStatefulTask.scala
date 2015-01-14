@@ -57,6 +57,7 @@ import org.apache.samza.task.TaskCoordinator
 import org.apache.samza.task.TaskCoordinator.RequestScope
 import org.apache.samza.util.ClientUtilTopicMetadataStore
 import org.apache.samza.util.TopicMetadataStore
+import org.apache.samza.job.JobRunner
 import org.junit.Assert._
 import org.junit.{BeforeClass, AfterClass, Test}
 import scala.collection.JavaConversions._
@@ -65,7 +66,6 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.SynchronizedMap
 import org.apache.samza.job.JobRunner
 import org.apache.kafka.clients.producer.{ProducerConfig, Producer, ProducerRecord, KafkaProducer}
-
 
 object TestStatefulTask {
   val INPUT_TOPIC = "input"
@@ -449,7 +449,7 @@ class TestTask extends StreamTask with InitableTask {
   }
 
   def awaitMessage {
-    assertTrue("Timed out of waiting for message rather than received one.", gotMessage.await(60, TimeUnit.SECONDS))
+    assertTrue("Timed out of waiting for message rather than received one.", gotMessage.await(3600, TimeUnit.SECONDS))
     assertEquals(0, gotMessage.getCount)
     gotMessage = new CountDownLatch(1)
   }

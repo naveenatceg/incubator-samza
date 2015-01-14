@@ -57,6 +57,8 @@ public class CoordinatorStreamSystemConsumer {
   private final SystemAdmin systemAdmin;
   private final Map<String, String> configMap;
   private boolean isBootstrapped;
+  private boolean isStarted;
+  private Set<CoordinatorStreamMessage> bootstrappedStreamSet = new HashSet<CoordinatorStreamMessage>();
 
   public CoordinatorStreamSystemConsumer(SystemStream coordinatorSystemStream, SystemConsumer systemConsumer, SystemAdmin systemAdmin, Serde<List<?>> keySerde, Serde<Map<String, Object>> messageSerde) {
     this.coordinatorSystemStreamPartition = new SystemStreamPartition(coordinatorSystemStream, new Partition(0));
@@ -110,6 +112,14 @@ public class CoordinatorStreamSystemConsumer {
   public void start() {
     log.info("Starting coordinator stream system consumer.");
     systemConsumer.start();
+    if(isStarted)
+    {
+      log.info("Coordinator stream consumer already started");
+      return;
+    }
+    log.info("Starting coordinator stream system consumer.");
+    systemConsumer.start();
+    isStarted = true;
   }
 
   /**
@@ -138,6 +148,7 @@ public class CoordinatorStreamSystemConsumer {
         }
         CoordinatorStreamMessage coordinatorStreamMessage = new CoordinatorStreamMessage(keyArray, valueMap);
         log.debug("Received coordinator stream message: {}", coordinatorStreamMessage);
+        bootstrappedStreamSet.add(coordinatorStreamMessage);
         if (SetConfig.TYPE.equals(coordinatorStreamMessage.getType())) {
           String configKey = coordinatorStreamMessage.getKey();
           if (coordinatorStreamMessage.isDelete()) {
@@ -153,6 +164,13 @@ public class CoordinatorStreamSystemConsumer {
     } catch (Exception e) {
       throw new SamzaException(e);
     }
+  }
+
+  public Set<CoordinatorStreamMessage> getBoostrappedStream() {
+    log.info("Returning the bootstrapped data from the stream");
+    if(!isBootstrapped)
+      bootstrap();
+    return bootstrappedStreamSet;
   }
 
   /**

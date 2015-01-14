@@ -119,7 +119,6 @@ public class Log4jSystemConfig {
    * Get a list of system names.
    * 
    * @return A list system names
->>>>>>> Chris patch
    */
   protected ArrayList<String> getSystemNames() {
     Config subConf = config.subset(SYSTEM_PREFIX, true);

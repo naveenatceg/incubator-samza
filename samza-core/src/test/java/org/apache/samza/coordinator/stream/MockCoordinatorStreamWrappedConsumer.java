@@ -19,15 +19,17 @@
 
 package org.apache.samza.coordinator.stream;
 
+import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.samza.SamzaException;
+import org.apache.samza.checkpoint.Checkpoint;
 import org.apache.samza.config.Config;
 import org.apache.samza.coordinator.stream.CoordinatorStreamMessage.SetConfig;
 import org.apache.samza.serializers.model.SamzaObjectMapper;
 import org.apache.samza.system.IncomingMessageEnvelope;
 import org.apache.samza.system.SystemStreamPartition;
 import org.apache.samza.util.BlockingEnvelopeMap;
+import org.apache.samza.util.Util;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
@@ -38,6 +40,8 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class MockCoordinatorStreamWrappedConsumer extends BlockingEnvelopeMap {
   private final static ObjectMapper MAPPER = SamzaObjectMapper.getObjectMapper();
+  public final static String CHANGELOGPREFIX = "ch:";
+  public final static String CHECKPOINTPREFIX = "cp:";
 
   private final SystemStreamPartition systemStreamPartition;
   private final Config config;
@@ -51,9 +55,32 @@ public class MockCoordinatorStreamWrappedConsumer extends BlockingEnvelopeMap {
   public void start() {
     try {
       for (Map.Entry<String, String> configPair : config.entrySet()) {
-        SetConfig setConfig = new SetConfig("source", configPair.getKey(), configPair.getValue());
-        byte[] keyBytes = MAPPER.writeValueAsString(setConfig.getKeyArray()).getBytes("UTF-8");
-        byte[] messgeBytes = MAPPER.writeValueAsString(setConfig.getMessageMap()).getBytes("UTF-8");
+        byte[] keyBytes = null;
+        byte[] messgeBytes = null;
+        if(configPair.getKey().startsWith(CHECKPOINTPREFIX))
+        {
+          String[] checkpointInfo = configPair.getKey().split(":");
+          String[] sspOffsetPair = configPair.getValue().split(":");
+          HashMap<SystemStreamPartition, String> checkpointMap = new HashMap<SystemStreamPartition, String>();
+          checkpointMap.put(Util.stringToSsp(sspOffsetPair[0]), sspOffsetPair[1]);
+          Checkpoint cp = new Checkpoint(checkpointMap);
+          CoordinatorStreamMessage.SetCheckpoint setCheckpoint = new CoordinatorStreamMessage.SetCheckpoint(checkpointInfo[1], checkpointInfo[2], cp);
+          keyBytes = MAPPER.writeValueAsString(setCheckpoint.getKeyArray()).getBytes("UTF-8");
+          messgeBytes = MAPPER.writeValueAsString(setCheckpoint.getMessageMap()).getBytes("UTF-8");
+        }
+        else if (configPair.getKey().startsWith(CHANGELOGPREFIX)) {
+          String[] changelogInfo = configPair.getKey().split(":");
+          String changeLogPartition = configPair.getValue();
+          CoordinatorStreamMessage.SetChangelogMapping changelogMapping = new CoordinatorStreamMessage.SetChangelogMapping(changelogInfo[1], changelogInfo[2], Integer.parseInt(changeLogPartition));
+          keyBytes = MAPPER.writeValueAsString(changelogMapping.getKeyArray()).getBytes("UTF-8");
+          messgeBytes = MAPPER.writeValueAsString(changelogMapping.getMessageMap()).getBytes("UTF-8");
+        }
+        else {
+          SetConfig setConfig = new SetConfig("source", configPair.getKey(), configPair.getValue());
+          keyBytes = MAPPER.writeValueAsString(setConfig.getKeyArray()).getBytes("UTF-8");
+          messgeBytes = MAPPER.writeValueAsString(setConfig.getMessageMap()).getBytes("UTF-8");
+        }
+        // The ssp here is the coordinator ssp (which is always fixed) and not the task ssp.
         put(systemStreamPartition, new IncomingMessageEnvelope(systemStreamPartition, "", keyBytes, messgeBytes));
       }
       setIsAtHead(systemStreamPartition, true);

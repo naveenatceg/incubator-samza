@@ -19,24 +19,13 @@
 
 package org.apache.samza.coordinator.stream
 
-import org.apache.samza.config.Config
-import org.apache.samza.config.SystemConfig.Config2System
-import org.apache.samza.config.JobConfig.Config2Job
-import org.apache.samza.config.ConfigException
-import org.apache.samza.config.SystemConfig
-import org.apache.samza.system.SystemStream
-import org.apache.samza.util.Util
-import org.apache.samza.system.SystemFactory
-import org.apache.samza.metrics.MetricsRegistryMap
-import org.apache.samza.system.SystemStreamPartition
 import org.apache.samza.SamzaException
-import org.apache.samza.serializers.model.SamzaObjectMapper
-import org.apache.samza.system.SystemStreamPartitionIterator
-import org.apache.samza.Partition
-import scala.collection.JavaConversions._
+import org.apache.samza.config.JobConfig.Config2Job
+import org.apache.samza.config.{Config, SystemConfig}
+import org.apache.samza.config.SystemConfig.Config2System
 import org.apache.samza.metrics.MetricsRegistry
-import org.apache.samza.coordinator.stream.CoordinatorStreamMessage.SetConfig
-import org.apache.samza.system.SystemAdmin
+import org.apache.samza.system.{SystemFactory, SystemStream}
+import org.apache.samza.util.Util
 
 /**
  * A helper class that does wiring for CoordinatorStreamSystemConsumer and

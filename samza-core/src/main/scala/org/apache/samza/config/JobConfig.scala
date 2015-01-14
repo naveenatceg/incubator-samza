@@ -54,7 +54,7 @@ class JobConfig(config: Config) extends ScalaMapConfig(config) with Logging {
     val systemNames = config.getSystemNames.toSet
     if (systemNames.size == 1) {
       val systemName = systemNames.iterator.next
-      info("No coorindator system defined, so defaulting to %s" format systemName)
+      info("No coordinator system defined, so defaulting to %s" format systemName)
       systemName
     } else {
       throw new ConfigException("Missing job.coordinator.system configuration.")

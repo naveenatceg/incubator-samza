@@ -17,21 +17,8 @@
  * under the License.
  */
 
-package org.apache.samza.serializers;
+package org.apache.samza.system.mock;
 
-import java.util.HashMap;
-import java.util.Map;
-import org.junit.Test;
-import static org.junit.Assert.*;
+public class MockSystemProducer {
 
-public class TestJsonSerde {
-  @Test
-  public void testJsonSerdeShouldWork() {
-    Serde<Map<String, Object>> serde = new JsonSerde<Map<String, Object>>();
-    Map<String, Object> obj = new HashMap<String, Object>();
-    obj.put("hi", "bye");
-    obj.put("why", Integer.valueOf(2));
-    byte[] bytes = serde.toBytes(obj);
-    assertEquals(obj, serde.fromBytes(bytes));
-  }
 }

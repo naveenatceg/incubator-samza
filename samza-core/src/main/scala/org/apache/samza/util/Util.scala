@@ -23,9 +23,9 @@ import java.net.URL
 import java.io.BufferedReader
 import java.lang.management.ManagementFactory
 import java.io.File
-import org.apache.samza.system.SystemStream
+import org.apache.samza.Partition
+import org.apache.samza.system.{SystemStreamPartition, SystemStream}
 import java.util.Random
-import org.apache.samza.job.model.JobModel
 import java.io.InputStreamReader
 import org.apache.samza.config.Config
 import org.apache.samza.config.SystemConfig
@@ -160,5 +160,29 @@ object Util extends Logging {
     // Build a map with just the system config and job.name/job.id. This is what's required to start the JobCoordinator.
     new MapConfig(config.subset(SystemConfig.SYSTEM_PREFIX format config.getCoordinatorSystemName, false) ++
       Map[String, String](JobConfig.JOB_NAME -> jobName, JobConfig.JOB_ID -> jobId))
+  }
+
+  /**
+   * The helper function converts a SSP to a string
+   * @param ssp System stream partition
+   * @return The string representation of the SSP
+   */
+  def sspToString(ssp: SystemStreamPartition): String = {
+     ssp.getSystem() + "." + ssp.getStream() + "." + String.valueOf(ssp.getPartition().getPartitionId())
+  }
+
+  /**
+   * The method converts the string SSP back to a SSP
+   * @param ssp The string form of the SSP
+   * @return An SSP typed object
+   */
+  def stringToSsp(ssp: String): SystemStreamPartition = {
+     val idx = ssp.indexOf('.');
+     val lastIdx = ssp.lastIndexOf('.')
+     if (idx < 0 || lastIdx < 0) {
+       throw new IllegalArgumentException("System stream partition expected in format 'system.stream.partition")
+     }
+     new SystemStreamPartition(new SystemStream(ssp.substring(0, idx), ssp.substring(idx + 1, lastIdx)),
+                               new Partition(Integer.parseInt(ssp.substring(lastIdx + 1))))
   }
 }

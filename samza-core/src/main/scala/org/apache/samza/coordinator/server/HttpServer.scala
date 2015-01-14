@@ -20,8 +20,6 @@
 package org.apache.samza.coordinator.server;
 
 import java.net.InetAddress
-import java.net.URI
-import java.net.UnknownHostException
 import javax.servlet.Servlet
 import org.apache.samza.SamzaException
 import org.eclipse.jetty.server.Connector

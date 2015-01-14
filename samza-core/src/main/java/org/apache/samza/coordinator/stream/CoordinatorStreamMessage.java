@@ -26,6 +26,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.samza.checkpoint.Checkpoint;
+import org.apache.samza.system.SystemStreamPartition;
+import org.apache.samza.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,6 +198,13 @@ public class CoordinatorStreamMessage {
     return getMessageValues().get(key);
   }
 
+  /**
+   * @param key
+   *           The key inside the messageMap, please only use human readable string (no JSON or such) - this allows
+   *           easy mutation of the coordinator stream outside of Samza (scripts)
+   * @param value
+   *           The value corresponding to the key, should also be a simple string
+   */
   protected void putMessageValue(String key, String value) {
     getMessageValues().put(key, value);
   }
@@ -244,7 +254,7 @@ public class CoordinatorStreamMessage {
   public Map<String, Object> getMessageMap() {
     if (!isDelete) {
       Map<String, Object> immutableMap = new HashMap<String, Object>(messageMap);
-      immutableMap.put("values", Collections.unmodifiableMap(getMessageValues()));
+      // To make sure the values is not immutable, we overwrite it with an immutable version of the the values map.
       return Collections.unmodifiableMap(immutableMap);
     } else {
       return null;
@@ -372,6 +382,94 @@ public class CoordinatorStreamMessage {
       setKey(key);
       setVersion(version);
       setIsDelete(true);
+    }
+  }
+
+  /**
+   * The SetCheckpoint is used to store the checkpoint messages for a particular task.
+   * The structure looks like:
+   * {
+   * Key: TaskName
+   * Type: set-checkpoint
+   * Source: CheckpointManager
+   * MessageMap:
+   *  {
+   *     SSP1 : offset,
+   *     SSP2 : offset
+   *  }
+   * }
+   */
+  public static class SetCheckpoint extends CoordinatorStreamMessage {
+    public static final String TYPE = "set-checkpoint";
+
+    public SetCheckpoint(CoordinatorStreamMessage message) {
+      super(message.getKeyArray(), message.getMessageMap());
+    }
+
+    /**
+     *
+     * @param source The source writing the checkpoint
+     * @param key The key for the checkpoint message (Typically task name)
+     * @param checkpoint Checkpoint message to be written to the stream
+     */
+    public SetCheckpoint(String source, String key, Checkpoint checkpoint) {
+      super(source);
+      setType(TYPE);
+      setKey(key);
+      Map<SystemStreamPartition, String> offsets = checkpoint.getOffsets();
+      for (Map.Entry<SystemStreamPartition, String> systemStreamPartitionStringEntry : offsets.entrySet()) {
+        putMessageValue(Util.sspToString(systemStreamPartitionStringEntry.getKey()), systemStreamPartitionStringEntry.getValue());
+      }
+    }
+
+    public Checkpoint getCheckpoint() {
+      Map<SystemStreamPartition, String> offsetMap = new HashMap<SystemStreamPartition, String>();
+      for (Map.Entry<String, String> sspToOffsetEntry : getMessageValues().entrySet()) {
+        offsetMap.put(Util.stringToSsp(sspToOffsetEntry.getKey()), sspToOffsetEntry.getValue());
+      }
+      return new Checkpoint(offsetMap);
+    }
+  }
+
+  /**
+   * The SetChanglog is used to store the changelog parition information for a particular task.
+   * The structure looks like:
+   * {
+   * Key: TaskName
+   * Type: set-changelog
+   * Source: ChangelogManager
+   * MessageMap:
+   *  {
+   *     "Partition" : partitionNumber (They key is just a dummy key here, the value contains the actual partition)
+   *  }
+   * }
+   */
+  public static class SetChangelogMapping extends CoordinatorStreamMessage {
+    public static final String TYPE = "set-changelog";
+
+    public SetChangelogMapping(CoordinatorStreamMessage message) {
+      super(message.getKeyArray(), message.getMessageMap());
+    }
+
+    /**
+     *
+     * @param source Source writing the change log mapping
+     * @param taskName The task name to be used in the mapping
+     * @param changelogPartitionNumber The partition to which the task's changelog is mapped to
+     */
+    public SetChangelogMapping(String source, String taskName, int changelogPartitionNumber) {
+      super(source);
+      setType(TYPE);
+      setKey(taskName);
+      putMessageValue("Partition", String.valueOf(changelogPartitionNumber));
+    }
+
+    public String getTaskName() {
+      return getKey();
+    }
+
+    public int getPartition() {
+      return Integer.parseInt(getMessageValue("Partition"));
     }
   }
 }

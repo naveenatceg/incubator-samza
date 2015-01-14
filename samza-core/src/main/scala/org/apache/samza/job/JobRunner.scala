@@ -23,9 +23,9 @@ import org.apache.samza.SamzaException
 import org.apache.samza.config.Config
 import org.apache.samza.config.JobConfig.Config2Job
 import org.apache.samza.job.ApplicationStatus.Running
-import org.apache.samza.util.Util
 import org.apache.samza.util.CommandLine
 import org.apache.samza.util.Logging
+import org.apache.samza.util.Util
 import scala.collection.JavaConversions._
 import org.apache.samza.config.SystemConfig.Config2System
 import org.apache.samza.config.ConfigException
