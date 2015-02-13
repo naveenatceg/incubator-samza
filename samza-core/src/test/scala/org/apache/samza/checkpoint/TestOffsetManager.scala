@@ -232,21 +232,20 @@ class TestOffsetManager {
   private def getCheckpointManager(systemStreamPartition: SystemStreamPartition, taskName:TaskName = new TaskName("taskName")) = {
     val checkpoint = new Checkpoint(Map(systemStreamPartition -> "45"))
 
-    new CheckpointManager {
+    new CheckpointManager(null, null) {
       var isStarted = false
       var isStopped = false
       var registered = Set[TaskName]()
       var checkpoints: Map[TaskName, Checkpoint] = Map(taskName -> checkpoint)
       var taskNameToPartitionMapping: util.Map[TaskName, java.lang.Integer] = new util.HashMap[TaskName, java.lang.Integer]()
-      def start { isStarted = true }
-      def register(taskName: TaskName) { registered += taskName }
-      def writeCheckpoint(taskName: TaskName, checkpoint: Checkpoint) { checkpoints += taskName -> checkpoint }
-      def readLastCheckpoint(taskName: TaskName) = checkpoints.getOrElse(taskName, null)
-      def stop { isStopped = true }
+      override def start { isStarted = true }
+      override def register(taskName: TaskName) { registered += taskName }
+      override def writeCheckpoint(taskName: TaskName, checkpoint: Checkpoint) { checkpoints += taskName -> checkpoint }
+      override def readLastCheckpoint(taskName: TaskName) = checkpoints.getOrElse(taskName, null)
+      override def stop { isStopped = true }
 
-      override def writeChangeLogPartitionMapping(mapping: util.Map[TaskName, java.lang.Integer]): Unit = taskNameToPartitionMapping = mapping
-
-      override def readChangeLogPartitionMapping(): util.Map[TaskName, java.lang.Integer] = taskNameToPartitionMapping
+      def writeChangeLogPartitionMapping(mapping: util.Map[TaskName, java.lang.Integer]): Unit = taskNameToPartitionMapping = mapping
+      def readChangeLogPartitionMapping(): util.Map[TaskName, java.lang.Integer] = taskNameToPartitionMapping
     }
   }
 

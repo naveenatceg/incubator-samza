@@ -30,7 +30,6 @@ import org.apache.samza.config.KafkaConfig.Config2Kafka
 import org.apache.samza.SamzaException
 import kafka.producer.Producer
 import org.apache.samza.system.SystemFactory
-import org.apache.samza.checkpoint.kafka.KafkaCheckpointManagerFactory
 
 class KafkaSystemFactory extends SystemFactory with Logging {
   def getConsumer(systemName: String, config: Config, registry: MetricsRegistry) = {
@@ -103,10 +102,9 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     val connectZk = () => {
       new ZkClient(zkConnect, 6000, 6000, ZKStringSerializer)
     }
-    // TODO Piggy back off of the checkpoint topic for now. Eventually, the 
-    // checkpoint topic will go away, and we'll just use the coordinator 
+    // checkpoint topic will go away, and we'll just use the coordinator
     // stream.
-    val coordinatorStreamProperties = KafkaCheckpointManagerFactory.getCheckpointTopicProperties(config)
+    val coordinatorStreamProperties = getCheckpointTopicProperties(config)
     val coordinatorStreamReplicationFactor = config
       .getCheckpointReplicationFactor.getOrElse("3")
       .toInt
@@ -131,4 +129,15 @@ class KafkaSystemFactory extends SystemFactory with Logging {
       clientId,
       topicMetaInformation)
   }
+
+  def getCheckpointTopicProperties(config: Config) = {
+    val segmentBytes = config
+            .getCheckpointSegmentBytes
+            .getOrElse("26214400")
+
+    (new Properties /: Map(
+      "cleanup.policy" -> "compact",
+      "segment.bytes" -> segmentBytes)) { case (props, (k, v)) => props.put(k, v); props }
+  }
+
 }

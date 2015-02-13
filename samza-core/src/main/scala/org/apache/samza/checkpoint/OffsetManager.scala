@@ -71,8 +71,8 @@ object OffsetManager extends Logging {
     systemStreamMetadata: Map[SystemStream, SystemStreamMetadata],
     config: Config,
     checkpointManager: CheckpointManager = null,
-    systemAdmins: Map[String, SystemAdmin] = Map()) = {
-
+    systemAdmins: Map[String, SystemAdmin] = Map(),
+    latestOffsets: Map[SystemStreamPartition, String] = Map()) = {
     debug("Building offset manager for %s." format systemStreamMetadata)
 
     val offsetSettings = systemStreamMetadata
@@ -162,7 +162,8 @@ class OffsetManager(
 
   def start {
     registerCheckpointManager
-    loadOffsetsFromCheckpointManager
+    initializeCheckpointManager
+    loadOffsets
     stripResetStreams
     loadStartingOffsets
     loadDefaults
@@ -232,18 +233,21 @@ class OffsetManager(
     }
   }
 
+  private def initializeCheckpointManager {
+    if (checkpointManager != null) {
+      checkpointManager.start
+    } else {
+      debug("Skipping offset load from checkpoint manager because no manager was defined.")
+    }
+  }
+
   /**
    * Loads last processed offsets from checkpoint manager for all registered
    * partitions.
    */
-  private def loadOffsetsFromCheckpointManager {
-    if (checkpointManager != null) {
-      debug("Loading offsets from checkpoint manager.")
-
-      checkpointManager.start
-
-      lastProcessedOffsets ++= systemStreamPartitions.keys
-        .flatMap(restoreOffsetsFromCheckpoint(_)).filter {
+  private def loadOffsets {
+      debug("Loading offsets")
+      lastProcessedOffsets.filter {
           case (systemStreamPartition, offset) =>
             val shouldKeep = offsetSettings.contains(systemStreamPartition.getSystemStream)
             if (!shouldKeep) {
@@ -251,27 +255,24 @@ class OffsetManager(
             }
             shouldKeep
         }
-    } else {
-      debug("Skipping offset load from checkpoint manager because no manager was defined.")
-    }
   }
 
-  /**
-   * Loads last processed offsets for a single taskName.
-   */
-  private def restoreOffsetsFromCheckpoint(taskName: TaskName): Map[SystemStreamPartition, String] = {
-    debug("Loading checkpoints for taskName: %s." format taskName)
-
-    val checkpoint = checkpointManager.readLastCheckpoint(taskName)
-
-    if (checkpoint != null) {
-      checkpoint.getOffsets.toMap
-    } else {
-      info("Did not receive a checkpoint for taskName %s. Proceeding without a checkpoint." format taskName)
-
-      Map()
-    }
-  }
+//  /**
+//   * Loads last processed offsets for a single taskName.
+//   */
+//  private def restoreOffsetsFromCheckpoint(taskName: TaskName): Map[SystemStreamPartition, String] = {
+//    debug("Loading checkpoints for taskName: %s." format taskName)
+//
+//    val checkpoint = checkpointManager.readLastCheckpoint(taskName)
+//
+//    if (checkpoint != null) {
+//      checkpoint.getOffsets.toMap
+//    } else {
+//      info("Did not receive a checkpoint for taskName %s. Proceeding without a checkpoint." format taskName)
+//
+//      Map()
+//    }
+//  }
 
   /**
    * Removes offset settings for all SystemStreams that are to be forcibly

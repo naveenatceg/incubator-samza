@@ -24,6 +24,8 @@ package org.apache.samza.container;
  * SystemStreamPartitionGrouper determines the TaskName for each set it creates.
  */
 public class TaskName implements Comparable<TaskName> {
+  // TaskName is the unique identifier used to identify messages in the coordinator stream, the class should be unique
+  // with just taskname
   private final String taskName;
 
   public String getTaskName() {

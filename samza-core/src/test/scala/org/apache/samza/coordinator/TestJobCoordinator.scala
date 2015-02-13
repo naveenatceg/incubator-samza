@@ -27,8 +27,6 @@ import org.apache.samza.config.TaskConfig
 import org.apache.samza.config.SystemConfig
 import org.apache.samza.container.TaskName
 import org.apache.samza.checkpoint.Checkpoint
-import org.apache.samza.checkpoint.CheckpointManagerFactory
-import org.apache.samza.checkpoint.CheckpointManager
 import org.apache.samza.metrics.MetricsRegistry
 import org.apache.samza.config.Config
 import org.apache.samza.system.SystemFactory
@@ -72,10 +70,10 @@ class TestJobCoordinator {
     val task1Name = new TaskName("Partition 1")
     val task2Name = new TaskName("Partition 2")
     val container0Tasks = Map(
-      task0Name -> new TaskModel(task0Name, Set(new SystemStreamPartition("test", "stream1", new Partition(0))), new Partition(4)),
-      task2Name -> new TaskModel(task2Name, Set(new SystemStreamPartition("test", "stream1", new Partition(2))), new Partition(5)))
+      task0Name -> new TaskModel(task0Name, Map(new SystemStreamPartition("test", "stream1", new Partition(0)) -> "0"), new Partition(4)),
+      task2Name -> new TaskModel(task2Name, Map(new SystemStreamPartition("test", "stream1", new Partition(2)) -> "0"), new Partition(5)))
     val container1Tasks = Map(
-      task1Name -> new TaskModel(task1Name, Set(new SystemStreamPartition("test", "stream1", new Partition(1))), new Partition(3)))
+      task1Name -> new TaskModel(task1Name, Map(new SystemStreamPartition("test", "stream1", new Partition(1)) ->  "0"), new Partition(3)))
     val containers = Map(
       Integer.valueOf(0) -> new ContainerModel(0, container0Tasks),
       Integer.valueOf(1) -> new ContainerModel(1, container1Tasks))
@@ -91,11 +89,11 @@ object MockCheckpointManager {
     new TaskName("Partition 1") -> 3)
 }
 
-class MockCheckpointManagerFactory extends CheckpointManagerFactory {
+class MockCheckpointManagerFactory {
   def getCheckpointManager(config: Config, registry: MetricsRegistry) = new MockCheckpointManager
 }
 
-class MockCheckpointManager extends CheckpointManager {
+class MockCheckpointManager {
   def start() {}
   def register(taskName: TaskName) {}
   def writeCheckpoint(taskName: TaskName, checkpoint: Checkpoint) {}

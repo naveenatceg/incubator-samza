@@ -19,6 +19,11 @@
 
 package org.apache.samza.container
 
+
+import java.util
+
+import com.sun.xml.internal.bind.Util
+
 import scala.collection.JavaConversions._
 
 import org.apache.samza.Partition
@@ -57,9 +62,11 @@ class TestSamzaContainer extends AssertionsForJUnit {
   @Test
   def testReadJobModel {
     val config = new MapConfig(Map("a" -> "b"))
+    val offsets = new util.HashMap[SystemStreamPartition, String]();
+    offsets.put(new SystemStreamPartition("system","stream", new Partition(0)), "1")
     val tasks = Map(
-      new TaskName("t1") -> new TaskModel(new TaskName("t1"), Set[SystemStreamPartition](), new Partition(0)),
-      new TaskName("t2") -> new TaskModel(new TaskName("t2"), Set[SystemStreamPartition](), new Partition(0)))
+      new TaskName("t1") -> new TaskModel(new TaskName("t1"), offsets, new Partition(0)),
+      new TaskName("t2") -> new TaskModel(new TaskName("t2"), offsets, new Partition(0)))
     val containers = Map(
       Integer.valueOf(0) -> new ContainerModel(0, tasks),
       Integer.valueOf(1) -> new ContainerModel(1, tasks))

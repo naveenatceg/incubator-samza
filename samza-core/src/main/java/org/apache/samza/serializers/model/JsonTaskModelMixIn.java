@@ -19,6 +19,7 @@
 
 package org.apache.samza.serializers.model;
 
+import java.util.Map;
 import java.util.Set;
 import org.apache.samza.Partition;
 import org.apache.samza.container.TaskName;
@@ -31,14 +32,14 @@ import org.codehaus.jackson.annotate.JsonProperty;
  */
 public abstract class JsonTaskModelMixIn {
   @JsonCreator
-  public JsonTaskModelMixIn(@JsonProperty("task-name") TaskName taskName, @JsonProperty("system-stream-partitions") Set<SystemStreamPartition> systemStreamPartitions, @JsonProperty("changelog-partition") Partition changelogPartition) {
+  public JsonTaskModelMixIn(@JsonProperty("task-name") TaskName taskName, @JsonProperty("system-stream-partitions-offsets") Map<SystemStreamPartition, String> systemStreamPartitionsToOffsets, @JsonProperty("changelog-partition") Partition changelogPartition) {
   }
 
   @JsonProperty("task-name")
   abstract TaskName getTaskName();
 
-  @JsonProperty("system-stream-partitions")
-  abstract Set<SystemStreamPartition> getSystemStreamPartitions();
+  @JsonProperty("system-stream-partitions-offsets")
+  abstract Map<SystemStreamPartition, String> getCheckpoint();
 
   @JsonProperty("changelog-partition")
   abstract Partition getChangelogPartition();
