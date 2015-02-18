@@ -98,7 +98,7 @@ object OffsetManager extends Logging {
           // Build OffsetSetting so we can create a map for OffsetManager.
           (systemStream, OffsetSetting(systemStreamMetadata, defaultOffsetType, resetOffset))
       }.toMap
-    new OffsetManager(offsetSettings, checkpointManager, systemAdmins)
+    new OffsetManager(offsetSettings, checkpointManager, systemAdmins, latestOffsets)
   }
 }
 
@@ -136,12 +136,15 @@ class OffsetManager(
    * SystemAdmins that are used to get next offsets from last checkpointed
    * offsets. Map is from system name to SystemAdmin class for the system.
    */
-  val systemAdmins: Map[String, SystemAdmin] = Map()) extends Logging {
+  val systemAdmins: Map[String, SystemAdmin] = Map(),
+
+  val lastProcessedOffsetsParam: Map[SystemStreamPartition, String] = Map()
+  ) extends Logging {
 
   /**
    * Last offsets processed for each SystemStreamPartition.
    */
-  var lastProcessedOffsets = Map[SystemStreamPartition, String]()
+  var lastProcessedOffsets = lastProcessedOffsetsParam
 
   /**
    * Offsets to start reading from for each SystemStreamPartition. This

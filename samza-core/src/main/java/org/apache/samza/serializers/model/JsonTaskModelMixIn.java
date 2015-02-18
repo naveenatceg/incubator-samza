@@ -20,7 +20,6 @@
 package org.apache.samza.serializers.model;
 
 import java.util.Map;
-import java.util.Set;
 import org.apache.samza.Partition;
 import org.apache.samza.container.TaskName;
 import org.apache.samza.system.SystemStreamPartition;
@@ -39,7 +38,7 @@ public abstract class JsonTaskModelMixIn {
   abstract TaskName getTaskName();
 
   @JsonProperty("system-stream-partitions-offsets")
-  abstract Map<SystemStreamPartition, String> getCheckpoint();
+  abstract Map<SystemStreamPartition, String> getCheckPoint();
 
   @JsonProperty("changelog-partition")
   abstract Partition getChangelogPartition();

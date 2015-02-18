@@ -26,6 +26,7 @@ import org.apache.samza.Partition;
 import org.apache.samza.container.TaskName;
 import org.apache.samza.system.SystemStreamPartition;
 
+
 /**
  * <p>
  * The data model used to represent a task. The model is used in the job

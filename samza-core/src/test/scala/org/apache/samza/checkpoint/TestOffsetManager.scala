@@ -64,8 +64,9 @@ class TestOffsetManager {
     val systemStreamMetadata = Map(systemStream -> testStreamMetadata)
     val config = new MapConfig
     val checkpointManager = getCheckpointManager(systemStreamPartition, taskName)
+    checkpointManager
     val systemAdmins = Map("test-system" -> getSystemAdmin)
-    val offsetManager = OffsetManager(systemStreamMetadata, config, checkpointManager, systemAdmins)
+    val offsetManager = OffsetManager(systemStreamMetadata, config, checkpointManager, systemAdmins, checkpointManager.getOffets)
     offsetManager.register(taskName, Set(systemStreamPartition))
     offsetManager.start
     assertTrue(checkpointManager.isStarted)
@@ -229,9 +230,9 @@ class TestOffsetManager {
     assertEquals(Some("13"), offsetManager.getStartingOffset(ssp))
   }
 
+
   private def getCheckpointManager(systemStreamPartition: SystemStreamPartition, taskName:TaskName = new TaskName("taskName")) = {
     val checkpoint = new Checkpoint(Map(systemStreamPartition -> "45"))
-
     new CheckpointManager(null, null) {
       var isStarted = false
       var isStopped = false
@@ -244,8 +245,13 @@ class TestOffsetManager {
       override def readLastCheckpoint(taskName: TaskName) = checkpoints.getOrElse(taskName, null)
       override def stop { isStopped = true }
 
-      def writeChangeLogPartitionMapping(mapping: util.Map[TaskName, java.lang.Integer]): Unit = taskNameToPartitionMapping = mapping
-      def readChangeLogPartitionMapping(): util.Map[TaskName, java.lang.Integer] = taskNameToPartitionMapping
+      //only for testing purposes
+      def getOffets: util.Map[SystemStreamPartition, String] =
+      {
+        checkpoint.getOffsets()
+      }
+      //def writeChangeLogPartitionMapping(mapping: util.Map[TaskName, java.lang.Integer]): Unit = taskNameToPartitionMapping = mapping
+      //def readChangeLogPartitionMapping(): util.Map[TaskName, java.lang.Integer] = taskNameToPartitionMapping
     }
   }
 

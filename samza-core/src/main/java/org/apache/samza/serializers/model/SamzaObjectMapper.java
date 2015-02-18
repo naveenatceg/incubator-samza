@@ -29,9 +29,9 @@ import org.apache.samza.container.TaskName;
 import org.apache.samza.job.model.ContainerModel;
 import org.apache.samza.job.model.JobModel;
 import org.apache.samza.job.model.TaskModel;
+import org.apache.samza.system.SystemStream;
 import org.apache.samza.system.SystemStreamPartition;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonGenerator;import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.ObjectCodec;
@@ -39,9 +39,11 @@ import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.JsonDeserializer;
 import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.map.KeyDeserializer;
 import org.codehaus.jackson.map.MapperConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.PropertyNamingStrategy;
+import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.SerializerProvider;
 import org.codehaus.jackson.map.introspect.AnnotatedField;
 import org.codehaus.jackson.map.introspect.AnnotatedMethod;
@@ -76,9 +78,11 @@ public class SamzaObjectMapper {
     // Setup custom serdes for simple data types.
     module.addSerializer(Partition.class, new PartitionSerializer());
     module.addSerializer(SystemStreamPartition.class, new SystemStreamPartitionSerializer());
+    module.addKeySerializer(SystemStreamPartition.class, new SystemStreamPartitionKeySerializer());
     module.addSerializer(TaskName.class, new TaskNameSerializer());
     module.addDeserializer(Partition.class, new PartitionDeserializer());
     module.addDeserializer(SystemStreamPartition.class, new SystemStreamPartitionDeserializer());
+    module.addKeyDeserializer(SystemStreamPartition.class, new SystemStreamPartitionKeyDeserializer());
     module.addDeserializer(Config.class, new ConfigDeserializer());
 
     // Setup mixins for data models.
@@ -88,6 +92,7 @@ public class SamzaObjectMapper {
     mapper.getDeserializationConfig().addMixInAnnotations(ContainerModel.class, JsonContainerModelMixIn.class);
     mapper.getSerializationConfig().addMixInAnnotations(JobModel.class, JsonJobModelMixIn.class);
     mapper.getDeserializationConfig().addMixInAnnotations(JobModel.class, JsonJobModelMixIn.class);
+    mapper.configure(SerializationConfig.Feature.AUTO_DETECT_GETTERS, false);
 
     // Convert camel case to hyphenated field names, and register the module.
     mapper.setPropertyNamingStrategy(new CamelCaseToDashesStrategy());
@@ -135,6 +140,31 @@ public class SamzaObjectMapper {
       ObjectCodec oc = jsonParser.getCodec();
       JsonNode node = oc.readTree(jsonParser);
       return new TaskName(node.getTextValue());
+    }
+  }
+
+  public static class SystemStreamPartitionKeySerializer extends JsonSerializer<SystemStreamPartition> {
+    @Override
+    public void serialize(SystemStreamPartition systemStreamPartition, JsonGenerator jgen, SerializerProvider provider)
+        throws IOException, JsonProcessingException {
+      String ssp = new String(systemStreamPartition.getSystem() + "." + systemStreamPartition.getStream() + "." + String.valueOf(systemStreamPartition.getPartition().getPartitionId()));
+      jgen.writeFieldName(ssp);
+    }
+  }
+
+  public static class SystemStreamPartitionKeyDeserializer extends KeyDeserializer {
+    @Override
+    public Object deserializeKey(String ssp, DeserializationContext ctxt)
+        throws IOException, JsonProcessingException {
+      int idx = ssp.indexOf('.');
+      int lastIdx = ssp.lastIndexOf('.');
+      if (idx < 0 || lastIdx < 0) {
+        throw new IllegalArgumentException("System stream partition expected in format 'system.stream.partition");
+      }
+      SystemStreamPartition ssp1 = new SystemStreamPartition(new SystemStream(ssp.substring(0, idx),
+          ssp.substring(idx + 1, lastIdx)),
+          new Partition(Integer.parseInt(ssp.substring(lastIdx + 1))));
+      return ssp1;
     }
   }
 

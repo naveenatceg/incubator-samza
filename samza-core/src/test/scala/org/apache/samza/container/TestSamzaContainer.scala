@@ -22,7 +22,6 @@ package org.apache.samza.container
 
 import java.util
 
-import com.sun.xml.internal.bind.Util
 
 import scala.collection.JavaConversions._
 
@@ -35,7 +34,6 @@ import org.apache.samza.coordinator.server.JobServlet
 import org.apache.samza.job.model.ContainerModel
 import org.apache.samza.job.model.JobModel
 import org.apache.samza.job.model.TaskModel
-import org.apache.samza.metrics.JmxServer
 import org.apache.samza.serializers.SerdeManager
 import org.apache.samza.system.IncomingMessageEnvelope
 import org.apache.samza.system.StreamMetadataCache
@@ -61,6 +59,7 @@ import org.scalatest.junit.AssertionsForJUnit
 class TestSamzaContainer extends AssertionsForJUnit {
   @Test
   def testReadJobModel {
+    println("test")
     val config = new MapConfig(Map("a" -> "b"))
     val offsets = new util.HashMap[SystemStreamPartition, String]();
     offsets.put(new SystemStreamPartition("system","stream", new Partition(0)), "1")
