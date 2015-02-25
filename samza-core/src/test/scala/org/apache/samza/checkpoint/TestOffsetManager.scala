@@ -154,22 +154,6 @@ class TestOffsetManager {
     }
   }
 
-  @Ignore("OffsetManager.start is supposed to throw an exception - but it doesn't") @Test
-  def testShouldFailWhenMissingDefault {
-    val taskName = new TaskName("c")
-    val systemStream = new SystemStream("test-system", "test-stream")
-    val partition = new Partition(0)
-    val systemStreamPartition = new SystemStreamPartition(systemStream, partition)
-    val testStreamMetadata = new SystemStreamMetadata(systemStream.getStream, Map(partition -> new SystemStreamPartitionMetadata("0", "1", "2")))
-    val systemStreamMetadata = Map(systemStream -> testStreamMetadata)
-    val offsetManager = OffsetManager(systemStreamMetadata, new MapConfig(Map[String, String]()))
-    offsetManager.register(taskName, Set(systemStreamPartition))
-
-    intercept[SamzaException] {
-      offsetManager.start
-    }
-  }
-
   @Test
   def testDefaultSystemShouldFailWhenFailIsSpecified {
     val systemStream = new SystemStream("test-system", "test-stream")

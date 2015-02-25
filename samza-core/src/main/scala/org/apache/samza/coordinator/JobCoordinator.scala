@@ -20,17 +20,19 @@
 package org.apache.samza.coordinator
 
 
+import java.util.Collections
+
 import org.apache.samza.changelog.ChangelogManager
 import org.apache.samza.config.Config
 import org.apache.samza.job.model.JobModel
 import org.apache.samza.SamzaException
 import org.apache.samza.container.grouper.task.GroupByContainerCount
-import org.apache.samza.util.Util
 import org.apache.samza.container.grouper.stream.SystemStreamPartitionGrouperFactory
 import java.util
 import org.apache.samza.container.TaskName
 import org.apache.samza.util.Logging
 import org.apache.samza.metrics.MetricsRegistryMap
+import org.apache.samza.util.Util
 import scala.collection.JavaConversions._
 import org.apache.samza.config.JobConfig.Config2Job
 import org.apache.samza.config.TaskConfig.Config2Task
@@ -194,9 +196,15 @@ object JobCoordinator extends Logging {
       groups
         .map {
           case (taskName, systemStreamPartitions) =>
+            checkpointManager.register(taskName)
             val checkpoint = Option(checkpointManager.readLastCheckpoint(taskName)).getOrElse(new Checkpoint(new util.HashMap[SystemStreamPartition, String]()))
+            var offsetMap = new util.HashMap[SystemStreamPartition, String]()
+            offsetMap.putAll(checkpoint.getOffsets)
+            //Find the system partitions which don't have a checkpoint and set null for the valuesp
+            (systemStreamPartitions -- offsetMap.keySet()).foreach(offsetMap += _ -> null)
+
             val changelogPartition = Option(previousChangelogeMapping.get(taskName)) match {
-              case Some(changelogPartitionId) => new Partition(changelogPartitionId)
+                case Some(changelogPartitionId) => new Partition(changelogPartitionId)
               case _ =>
                 // If we've never seen this TaskName before, then assign it a 
                 // new changelog.
@@ -204,7 +212,7 @@ object JobCoordinator extends Logging {
                 info("New task %s is being assigned changelog partition %s." format (taskName, maxChangelogPartitionId))
                 new Partition(maxChangelogPartitionId)
             }
-            new TaskModel(taskName, checkpoint.getOffsets, changelogPartition)
+            new TaskModel(taskName, offsetMap, changelogPartition)
         }
         .toSet
     }

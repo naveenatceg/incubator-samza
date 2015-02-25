@@ -26,9 +26,10 @@ import org.apache.samza.config.ShellCommandConfig._
 import org.apache.samza.config.TaskConfig._
 import org.apache.samza.container.SamzaContainer
 import org.apache.samza.job.{ StreamJob, StreamJobFactory }
-import org.apache.samza.util.Util
 import org.apache.samza.config.JobConfig._
 import org.apache.samza.coordinator.JobCoordinator
+import org.apache.samza.utilj.UtilJ
+
 
 /**
  * Creates a new Thread job with the given config

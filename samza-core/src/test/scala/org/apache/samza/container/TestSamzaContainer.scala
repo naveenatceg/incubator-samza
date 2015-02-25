@@ -59,7 +59,6 @@ import org.scalatest.junit.AssertionsForJUnit
 class TestSamzaContainer extends AssertionsForJUnit {
   @Test
   def testReadJobModel {
-    println("test")
     val config = new MapConfig(Map("a" -> "b"))
     val offsets = new util.HashMap[SystemStreamPartition, String]();
     offsets.put(new SystemStreamPartition("system","stream", new Partition(0)), "1")

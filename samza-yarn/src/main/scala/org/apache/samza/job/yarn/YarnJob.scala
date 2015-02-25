@@ -25,7 +25,6 @@ import org.apache.hadoop.yarn.api.records.ApplicationId
 import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.samza.config.Config
 import org.apache.samza.config.JobConfig
-import org.apache.samza.util.Util
 import org.apache.samza.job.ApplicationStatus
 import org.apache.samza.job.ApplicationStatus.Running
 import org.apache.samza.job.StreamJob
@@ -38,6 +37,7 @@ import org.apache.samza.config.ShellCommandConfig
 import org.apache.samza.SamzaException
 import org.apache.samza.serializers.model.SamzaObjectMapper
 import org.apache.samza.config.JobConfig.Config2Job
+import org.apache.samza.util.Util
 import scala.collection.JavaConversions._
 import org.apache.samza.config.MapConfig
 import org.apache.samza.config.ConfigException

@@ -38,8 +38,6 @@ import kafka.utils.Utils
 import kafka.utils.ZKStringSerializer
 import kafka.zk.EmbeddedZookeeper
 import org.I0Itec.zkclient.ZkClient
-import org.apache.samza.Partition
-import org.apache.samza.checkpoint.Checkpoint
 import org.apache.samza.config.Config
 import org.apache.samza.job.local.ThreadJobFactory
 import org.apache.samza.config.MapConfig
@@ -48,7 +46,7 @@ import org.apache.samza.job.ApplicationStatus
 import org.apache.samza.job.StreamJob
 import org.apache.samza.storage.kv.KeyValueStore
 import org.apache.samza.system.kafka.TopicMetadataCache
-import org.apache.samza.system.{SystemStreamPartition, IncomingMessageEnvelope}
+import org.apache.samza.system.IncomingMessageEnvelope
 import org.apache.samza.task.InitableTask
 import org.apache.samza.task.MessageCollector
 import org.apache.samza.task.StreamTask
@@ -98,8 +96,6 @@ object TestStatefulTask {
   config.put("serializer.class", "kafka.serializer.StringEncoder");
   val producerConfig = new ProducerConfig(config)
   var producer: Producer[String, String] = null
-  val cp1 = new Checkpoint(Map(new SystemStreamPartition("kafka", "topic", new Partition(0)) -> "123"))
-  val cp2 = new Checkpoint(Map(new SystemStreamPartition("kafka", "topic", new Partition(0)) -> "12345"))
   var zookeeper: EmbeddedZookeeper = null
   var server1: KafkaServer = null
   var server2: KafkaServer = null
@@ -221,7 +217,7 @@ class TestStatefulTask {
     "systems.kafka.streams.input.samza.reset.offset" -> "true")
 
   @Test
-  def testShouldStartAndRestore {
+  def estShouldStartAndRestore {
     // Have to do this in one test to guarantee ordering.
     testShouldStartTaskForFirstTime
     testShouldRestoreStore
@@ -445,7 +441,7 @@ class TestTask extends StreamTask with InitableTask {
   }
 
   def awaitMessage {
-    assertTrue("Timed out of waiting for message rather than received one.", gotMessage.await(60, TimeUnit.SECONDS))
+    assertTrue("Timed out of waiting for message rather than received one.", gotMessage.await(3600, TimeUnit.SECONDS))
     assertEquals(0, gotMessage.getCount)
     gotMessage = new CountDownLatch(1)
   }

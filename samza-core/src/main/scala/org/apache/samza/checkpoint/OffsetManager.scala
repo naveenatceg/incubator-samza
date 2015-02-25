@@ -138,13 +138,15 @@ class OffsetManager(
    */
   val systemAdmins: Map[String, SystemAdmin] = Map(),
 
-  val lastProcessedOffsetsParam: Map[SystemStreamPartition, String] = Map()
+  val previousCheckpointedOffsets: Map[SystemStreamPartition, String] = Map()
   ) extends Logging {
 
   /**
    * Last offsets processed for each SystemStreamPartition.
    */
-  var lastProcessedOffsets = lastProcessedOffsetsParam
+  //Filter out null offset values, we can't use them anyway, these exist only because of SSP information
+  previousCheckpointedOffsets.filter { case (systemStreamPartition, offset) => Option(offset).isDefined }
+  var lastProcessedOffsets = previousCheckpointedOffsets
 
   /**
    * Offsets to start reading from for each SystemStreamPartition. This
@@ -249,8 +251,8 @@ class OffsetManager(
    * partitions.
    */
   private def loadOffsets {
-      debug("Loading offsets")
-      lastProcessedOffsets.filter {
+    debug("Loading offsets")
+    lastProcessedOffsets.filter {
           case (systemStreamPartition, offset) =>
             val shouldKeep = offsetSettings.contains(systemStreamPartition.getSystemStream)
             if (!shouldKeep) {
@@ -258,6 +260,7 @@ class OffsetManager(
             }
             shouldKeep
         }
+
   }
 
 //  /**

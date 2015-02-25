@@ -23,7 +23,8 @@ import java.net.URL
 import java.io.BufferedReader
 import java.lang.management.ManagementFactory
 import java.io.File
-import org.apache.samza.system.SystemStream
+import org.apache.samza.Partition
+import org.apache.samza.system.{SystemStreamPartition, SystemStream}
 import java.util.Random
 import org.apache.samza.job.model.JobModel
 import java.io.InputStreamReader

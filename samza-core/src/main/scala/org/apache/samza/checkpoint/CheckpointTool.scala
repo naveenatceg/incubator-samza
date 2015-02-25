@@ -29,7 +29,7 @@ import org.apache.samza.container.TaskName
 import org.apache.samza.coordinator.stream.CoordinatorStreamSystemFactory
 import org.apache.samza.metrics.MetricsRegistryMap
 import org.apache.samza.system.SystemStreamPartition
-import org.apache.samza.util.{CommandLine, Util}
+import org.apache.samza.util.CommandLine
 import org.apache.samza.{Partition, SamzaException}
 import scala.collection.JavaConversions._
 import org.apache.samza.util.Logging

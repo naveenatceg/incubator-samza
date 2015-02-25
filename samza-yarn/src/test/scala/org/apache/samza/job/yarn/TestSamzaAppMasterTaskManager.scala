@@ -37,7 +37,7 @@ import org.apache.samza.config.MapConfig
 import org.apache.samza.metrics.MetricsRegistry
 import org.apache.samza.system.SystemFactory
 import org.apache.samza.system.SystemStreamPartition
-import org.apache.samza.util.Util
+import org.apache.samza.utilj.UtilJ
 import org.junit.Test
 import scala.collection.JavaConversions._
 import TestSamzaAppMasterTaskManager._

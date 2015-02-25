@@ -96,8 +96,7 @@ object SamzaContainer extends Logging {
    * constructor.
    */
   def readJobModel(url: String) = {
-    println("Fetching configuration from: %s" format url)
-    println((Util.read(new URL(url))));
+    debug((Util.read(new URL(url))));
     SamzaObjectMapper
       .getObjectMapper
       .readValue(Util.read(new URL(url)), classOf[JobModel])

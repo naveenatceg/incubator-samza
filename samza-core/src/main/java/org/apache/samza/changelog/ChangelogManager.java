@@ -36,7 +36,6 @@ public class ChangelogManager {
   CoordinatorStreamSystemConsumer coordinatorStreamConsumer;
   Set<CoordinatorStreamMessage> bootstrappedStream;
   HashSet<TaskName> taskNames = new HashSet<TaskName>();
-  boolean coordinatorStreamConsumerRegistered = false;
   private static final Logger log = LoggerFactory.getLogger(ChangelogManager.class);
 
   public ChangelogManager(CoordinatorStreamSystemProducer coordinatorStreamProducer, CoordinatorStreamSystemConsumer coordinatorStreamConsumer) {
@@ -62,11 +61,8 @@ public class ChangelogManager {
   public void register(TaskName taskName) {
     log.debug("Adding taskName " + taskName + " to " + this);
     taskNames.add(taskName);
-    if(coordinatorStreamConsumerRegistered) {
-      coordinatorStreamConsumer.register();
-      coordinatorStreamConsumerRegistered = true;
-    }
-      coordinatorStreamProducer.register(taskName.getTaskName());
+    coordinatorStreamConsumer.register();
+    coordinatorStreamProducer.register(taskName.getTaskName());
   }
 
 
@@ -75,7 +71,7 @@ public class ChangelogManager {
     bootstrappedStream = new HashSet<CoordinatorStreamMessage>();
 
     for (CoordinatorStreamMessage coordinatorStreamMessage : coordinatorStreamConsumer.getBoostrappedStream()) {
-      if(coordinatorStreamMessage.getType().equals(CoordinatorStreamMessage.SetChangelogMapping.TYPE))
+      if(coordinatorStreamMessage.getType().equalsIgnoreCase(CoordinatorStreamMessage.SetChangelogMapping.TYPE))
         bootstrappedStream.add(coordinatorStreamMessage);
     }
   }
@@ -101,7 +97,7 @@ public class ChangelogManager {
   public void writeChangeLogPartitionMapping(Map<TaskName, Integer> changelogEntry) {
     for (Map.Entry<TaskName, Integer> entry : changelogEntry.entrySet()) {
       CoordinatorStreamMessage.SetChangelogMapping changelogMapping = new
-          CoordinatorStreamMessage.SetChangelogMapping("ChangelogManager",
+          CoordinatorStreamMessage.SetChangelogMapping(entry.getKey().getTaskName(),
           entry.getKey().getTaskName(),
           entry.getValue());
       coordinatorStreamProducer.send(changelogMapping);

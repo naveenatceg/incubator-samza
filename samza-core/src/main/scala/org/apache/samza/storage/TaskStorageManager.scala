@@ -20,11 +20,12 @@
 package org.apache.samza.storage
 
 import java.io.File
+import org.apache.samza.util.Util
+
 import scala.collection.Map
 import org.apache.samza.util.Logging
 import org.apache.samza.Partition
 import org.apache.samza.system._
-import org.apache.samza.util.Util
 import org.apache.samza.SamzaException
 import org.apache.samza.container.TaskName
 
