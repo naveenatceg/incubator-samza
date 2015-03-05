@@ -144,7 +144,7 @@ class OffsetManager(
   /**
    * Last offsets processed for each SystemStreamPartition.
    */
-  //Filter out null offset values, we can't use them anyway, these exist only because of SSP information
+  // Filter out null offset values, we can't use them anyway, these exist only because of SSP information
   previousCheckpointedOffsets.filter { case (systemStreamPartition, offset) => Option(offset).isDefined }
   var lastProcessedOffsets = previousCheckpointedOffsets
 

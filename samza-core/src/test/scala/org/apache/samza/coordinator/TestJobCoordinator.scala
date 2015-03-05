@@ -51,7 +51,7 @@ class TestJobCoordinator {
    * expected. We simulate having a checkpoint manager that has 2 task
    * changelog entries, and our model adds a third task. Expectation is that
    * the JobCoordinator will assign the new task with a new changelog
-   * partition.
+   * partition.z``zz
    */
   @Test
   def testJobCoordinator {
@@ -60,7 +60,7 @@ class TestJobCoordinator {
     val task1Name = new TaskName("Partition 1")
     val checkpoint1 = Map(new SystemStreamPartition("test", "stream1", new Partition(1)) ->  "3")
     val task2Name = new TaskName("Partition 2")
-    val checkpoint2 = Map(new SystemStreamPartition("test", "stream1", new Partition(2)) -> "0")
+    val checkpoint2 = Map(new SystemStreamPartition("test", "stream1", new Partition(2)) -> null)
 
     // Construct the expected JobModel, so we can compare it to
     // JobCoordinator's JobModel.
@@ -73,17 +73,19 @@ class TestJobCoordinator {
       Integer.valueOf(0) -> new ContainerModel(0, container0Tasks),
       Integer.valueOf(1) -> new ContainerModel(1, container1Tasks))
 
+    // The test does not pass offsets for task2 (Partition 2) to the checkpointmanager, this will verify that we get an offset 0
     val checkpointOffset0 = "cp:mock:" + task0Name.getTaskName() -> (UtilJ.sspToString(checkpoint0.keySet.iterator.next()) + ":" + checkpoint0.values.iterator.next())
     val checkpointOffset1 = "cp:mock:" + task1Name.getTaskName() -> (UtilJ.sspToString(checkpoint1.keySet.iterator.next()) + ":" + checkpoint1.values.iterator.next())
-    val checkpointOffset2 = "cp:mock:" + task2Name.getTaskName() -> (UtilJ.sspToString(checkpoint2.keySet.iterator.next()) + ":" + checkpoint2.values.iterator.next())
+    //val checkpointOffset2 = "cp:mock:" + task2Name.getTaskName() -> (UtilJ.sspToString(checkpoint2.keySet.iterator.next()) + ":" + checkpoint2.values.iterator.next())
     val changelogInfo0 = "ch:mock:" + task0Name.getTaskName() -> "4"
     val changelogInfo1 = "ch:mock:" + task1Name.getTaskName() -> "3"
     val changelogInfo2 = "ch:mock:" + task2Name.getTaskName() -> "5"
 
+    // Configs which are processed by the MockCoordinatorStream as special configs (SetCheckpoint and SetChangelog)
     val otherConfigs = Map(
       checkpointOffset0,
       checkpointOffset1,
-      checkpointOffset2,
+      //checkpointOffset2,
       changelogInfo0,
       changelogInfo1,
       changelogInfo2
