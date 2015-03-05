@@ -64,7 +64,6 @@ class TestOffsetManager {
     val systemStreamMetadata = Map(systemStream -> testStreamMetadata)
     val config = new MapConfig
     val checkpointManager = getCheckpointManager(systemStreamPartition, taskName)
-    checkpointManager
     val systemAdmins = Map("test-system" -> getSystemAdmin)
     val offsetManager = OffsetManager(systemStreamMetadata, config, checkpointManager, systemAdmins, checkpointManager.getOffets)
     offsetManager.register(taskName, Set(systemStreamPartition))
