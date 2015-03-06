@@ -19,7 +19,6 @@
 
 package org.apache.samza.serializers
 import org.codehaus.jackson.map.ObjectMapper
-import java.nio.ByteBuffer
 import org.apache.samza.config.Config
 
 class JsonSerde extends Serde[Object] {
