@@ -19,6 +19,9 @@
 
 package org.apache.samza.system.kafka
 
+
+import java.io.{PrintWriter, File}
+
 import org.I0Itec.zkclient.ZkClient
 import org.apache.samza.Partition
 import org.apache.samza.SamzaException
@@ -216,6 +219,8 @@ class KafkaSystemAdmin(
   }
 
   def createCoordinatorStream(streamName: String) {
+    val writer = new PrintWriter(new File("/tmp/test.txt" ))
+
     info("Attempting to create coordinator stream %s." format streamName)
     new ExponentialSleepStrategy(initialDelayMs = 500).run(
       loop => {
@@ -238,9 +243,13 @@ class KafkaSystemAdmin(
       (exception, loop) => {
         exception match {
           case e: TopicExistsException =>
+            writer.write("stream exists: " + streamName + " \n")
+            writer.flush()
             info("Coordinator stream %s already exists." format streamName)
             loop.done
           case e: Exception =>
+            writer.write("failed to create topic: " + streamName + "exception was : " + e + " \n")
+            writer.flush()
             warn("Failed to create topic %s: %s. Retrying." format (streamName, e))
             debug("Exception detail:", e)
         }

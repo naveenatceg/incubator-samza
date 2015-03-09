@@ -50,9 +50,6 @@ class KafkaSystemProducer(systemName: String,
   }
 
   def stop() {
-    // Flush any remaining buffered messages before shutting down.
-    sourceBuffers.keySet.foreach(flush(_))
-
     if (producer != null) {
       producer.close
     }

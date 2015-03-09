@@ -99,7 +99,7 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     // stream.
     val coordinatorStreamProperties = getCheckpointTopicProperties(config)
     val coordinatorStreamReplicationFactor = config
-      .getCheckpointReplicationFactor.getOrElse("3")
+      .getCheckpointReplicationFactor.getOrElse("1")
       .toInt
     val storeToChangelog = config.getKafkaChangelogEnabledStores()
     // Construct the meta information for each topic, if the replication factor is not defined, we use 2 as the number of replicas for the change log stream.

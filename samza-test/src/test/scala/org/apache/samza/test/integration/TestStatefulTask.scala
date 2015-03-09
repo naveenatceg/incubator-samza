@@ -35,6 +35,8 @@ import kafka.utils.Utils
 import kafka.utils.ZKStringSerializer
 import kafka.zk.EmbeddedZookeeper
 import org.I0Itec.zkclient.ZkClient
+import org.apache.samza.Partition
+import org.apache.samza.checkpoint.Checkpoint
 import org.apache.samza.config.Config
 import org.apache.samza.job.local.ThreadJobFactory
 import org.apache.samza.config.MapConfig
