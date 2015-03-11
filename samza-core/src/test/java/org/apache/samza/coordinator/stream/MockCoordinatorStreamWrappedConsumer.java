@@ -43,6 +43,8 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class MockCoordinatorStreamWrappedConsumer extends BlockingEnvelopeMap {
   private final static ObjectMapper MAPPER = SamzaObjectMapper.getObjectMapper();
+  public final static String CHANGELOGPREFIX = "ch:";
+  public final static String CHECKPOINTPREFIX = "cp:";
 
   private final SystemStreamPartition systemStreamPartition;
   private final Config config;
@@ -58,7 +60,7 @@ public class MockCoordinatorStreamWrappedConsumer extends BlockingEnvelopeMap {
       for (Map.Entry<String, String> configPair : config.entrySet()) {
         byte[] keyBytes = null;
         byte[] messgeBytes = null;
-        if(configPair.getKey().startsWith("cp:"))
+        if(configPair.getKey().startsWith(CHECKPOINTPREFIX))
         {
           String[] checkpointInfo = configPair.getKey().split(":");
           String[] sspOffsetPair = configPair.getValue().split(":");
@@ -69,7 +71,7 @@ public class MockCoordinatorStreamWrappedConsumer extends BlockingEnvelopeMap {
           keyBytes = MAPPER.writeValueAsString(setCheckpoint.getKeyArray()).getBytes("UTF-8");
           messgeBytes = MAPPER.writeValueAsString(setCheckpoint.getMessageMap()).getBytes("UTF-8");
         }
-        else if (configPair.getKey().startsWith("ch:")) {
+        else if (configPair.getKey().startsWith(CHANGELOGPREFIX)) {
           String[] changelogInfo = configPair.getKey().split(":");
           String changeLogPartition = configPair.getValue();
           CoordinatorStreamMessage.SetChangelogMapping changelogMapping = new CoordinatorStreamMessage.SetChangelogMapping(changelogInfo[1], changelogInfo[2], Integer.parseInt(changeLogPartition));

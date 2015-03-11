@@ -17,15 +17,16 @@
  * under the License.
  */
 
-package org.apache.samza.coordinator.server
+package org.apache.samza.coordinator.stream;
+
+import org.junit.Test;
 
 
-import org.apache.samza.job.model.JobModel
-import org.apache.samza.util.Logging
+public class TestCheckpointChangelogManager {
 
-/**
- * A servlet that dumps the job model for a Samza job.
- */
-class JobServlet(jobModelGenerator: => JobModel) extends ServletBase with Logging {
-  protected def getObjectToWrite() = jobModelGenerator
+  @Test
+  public void testCheckpointManager()
+  {
+
+  }
 }

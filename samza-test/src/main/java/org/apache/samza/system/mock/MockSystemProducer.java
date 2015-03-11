@@ -17,15 +17,8 @@
  * under the License.
  */
 
-package org.apache.samza.coordinator.server
+package org.apache.samza.system.mock;
 
+public class MockSystemProducer {
 
-import org.apache.samza.job.model.JobModel
-import org.apache.samza.util.Logging
-
-/**
- * A servlet that dumps the job model for a Samza job.
- */
-class JobServlet(jobModelGenerator: => JobModel) extends ServletBase with Logging {
-  protected def getObjectToWrite() = jobModelGenerator
 }

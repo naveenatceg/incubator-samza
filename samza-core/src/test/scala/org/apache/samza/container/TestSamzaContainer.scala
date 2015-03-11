@@ -71,9 +71,10 @@ class TestSamzaContainer extends AssertionsForJUnit {
       Integer.valueOf(0) -> new ContainerModel(0, tasks),
       Integer.valueOf(1) -> new ContainerModel(1, tasks))
     val jobModel = new JobModel(config, containers)
+    def jobModelGenerator(): JobModel = jobModel
     val server = new HttpServer
     val coordinator = new JobCoordinator(jobModel, server)
-    coordinator.server.addServlet("/*", new JobServlet(jobModel))
+    coordinator.server.addServlet("/*", new JobServlet(jobModelGenerator))
     try {
       coordinator.start
       assertEquals(jobModel, SamzaContainer.readJobModel(server.getUrl.toString))

@@ -84,10 +84,10 @@ object JobCoordinator extends Logging {
    */
   def getJobCoordinator(config: Config) = {
     val containerCount = config.getContainerCount
-    val jobModel = buildJobModel(config, containerCount)
+    def jobModelGenerator(): JobModel = buildJobModel(config, containerCount)
     val server = new HttpServer
-    server.addServlet("/*", new JobServlet(jobModel))
-    new JobCoordinator(jobModel, server)
+    server.addServlet("/*", new JobServlet(jobModelGenerator))
+    new JobCoordinator(jobModelGenerator(), server)
   }
 
   /**

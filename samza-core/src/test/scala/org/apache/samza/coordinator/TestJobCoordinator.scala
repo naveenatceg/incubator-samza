@@ -43,7 +43,7 @@ import org.apache.samza.job.model.TaskModel
 import org.apache.samza.config.JobConfig
 import org.apache.samza.system.IncomingMessageEnvelope
 import org.apache.samza.system.SystemConsumer
-import org.apache.samza.coordinator.stream.MockCoordinatorStreamSystemFactory
+import org.apache.samza.coordinator.stream.{MockCoordinatorStreamWrappedConsumer, MockCoordinatorStreamSystemFactory}
 
 class TestJobCoordinator {
   /**
@@ -73,19 +73,21 @@ class TestJobCoordinator {
       Integer.valueOf(0) -> new ContainerModel(0, container0Tasks),
       Integer.valueOf(1) -> new ContainerModel(1, container1Tasks))
 
-    // The test does not pass offsets for task2 (Partition 2) to the checkpointmanager, this will verify that we get an offset 0
-    val checkpointOffset0 = "cp:mock:" + task0Name.getTaskName() -> (UtilJ.sspToString(checkpoint0.keySet.iterator.next()) + ":" + checkpoint0.values.iterator.next())
-    val checkpointOffset1 = "cp:mock:" + task1Name.getTaskName() -> (UtilJ.sspToString(checkpoint1.keySet.iterator.next()) + ":" + checkpoint1.values.iterator.next())
-    //val checkpointOffset2 = "cp:mock:" + task2Name.getTaskName() -> (UtilJ.sspToString(checkpoint2.keySet.iterator.next()) + ":" + checkpoint2.values.iterator.next())
-    val changelogInfo0 = "ch:mock:" + task0Name.getTaskName() -> "4"
-    val changelogInfo1 = "ch:mock:" + task1Name.getTaskName() -> "3"
-    val changelogInfo2 = "ch:mock:" + task2Name.getTaskName() -> "5"
 
-    // Configs which are processed by the MockCoordinatorStream as special configs (SetCheckpoint and SetChangelog)
+    // The test does not pass offsets for task2 (Partition 2) to the checkpointmanager, this will verify that we get an offset 0 for this partition
+    val checkpointOffset0 = MockCoordinatorStreamWrappedConsumer.CHECKPOINTPREFIX + "mock:" +
+            task0Name.getTaskName() -> (UtilJ.sspToString(checkpoint0.keySet.iterator.next()) + ":" + checkpoint0.values.iterator.next())
+    val checkpointOffset1 = MockCoordinatorStreamWrappedConsumer.CHECKPOINTPREFIX + "mock:" +
+            task1Name.getTaskName() -> (UtilJ.sspToString(checkpoint1.keySet.iterator.next()) + ":" + checkpoint1.values.iterator.next())
+    val changelogInfo0 = MockCoordinatorStreamWrappedConsumer.CHANGELOGPREFIX + "mock:" + task0Name.getTaskName() -> "4"
+    val changelogInfo1 = MockCoordinatorStreamWrappedConsumer.CHANGELOGPREFIX + "mock:" + task1Name.getTaskName() -> "3"
+    val changelogInfo2 = MockCoordinatorStreamWrappedConsumer.CHANGELOGPREFIX + "mock:" + task2Name.getTaskName() -> "5"
+
+    // Configs which are processed by the MockCoordinatorStream as special configs which are interpreted as
+    // SetCheckpoint and SetChangelog
     val otherConfigs = Map(
       checkpointOffset0,
       checkpointOffset1,
-      //checkpointOffset2,
       changelogInfo0,
       changelogInfo1,
       changelogInfo2
@@ -101,17 +103,31 @@ class TestJobCoordinator {
       )
 
     val coordinator = JobCoordinator(new MapConfig(config ++ otherConfigs))
+    coordinator.start
     val jobModel = new JobModel(new MapConfig(config), containers)
     assertEquals(new MapConfig(config), coordinator.jobModel.getConfig)
     assertEquals(jobModel, coordinator.jobModel)
   }
-}
 
-//object MockCheckpointManager {
-//  var mapping: java.util.Map[TaskName, java.lang.Integer] = Map[TaskName, java.lang.Integer](
-//    new TaskName("Partition 0") -> 4,
-//    new TaskName("Partition 1") -> 3)
-//}
+  @Test
+  def testJobCoordinatorCheckpointing = {
+    // Write a couple of checkpoints that the jobcoordinator will process
+
+    // start the job coordinator and verify if it has all the checkpoints through http port
+
+    // Write more checkpoint objects
+
+    // Verify if the coordinator has it
+
+    // Write more checkpoints but block on read on the mock consumer
+
+    // verify if the port times out (might have to be done in another thread)
+
+    // verify if it has read the new checkpoints after timeout expires
+  }
+
+
+}
 
 class MockSystemFactory extends SystemFactory {
   def getConsumer(systemName: String, config: Config, registry: MetricsRegistry) = new SystemConsumer {
