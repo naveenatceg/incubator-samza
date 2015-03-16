@@ -19,7 +19,6 @@
 
 package org.apache.samza.serializers
 
-
 import org.apache.samza.SamzaException
 import org.apache.samza.serializers.model.SamzaObjectMapper
 import org.codehaus.jackson.`type`.TypeReference

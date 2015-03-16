@@ -27,14 +27,13 @@ import org.apache.samza.metrics.MetricsRegistry
 import org.apache.samza.config.StreamConfig.Config2Stream
 import org.apache.samza.config.MetricsConfig.Config2Metrics
 import org.apache.samza.metrics.MetricsReporterFactory
+import org.apache.samza.util.Util
 import org.apache.samza.metrics.ReadableMetricsRegistry
 import org.apache.samza.util.Logging
 import org.apache.samza.SamzaException
 import java.util.Timer
 import java.util.TimerTask
 import org.apache.samza.metrics.MetricsHelper
-import org.apache.samza.util.Util
-
 
 object SamzaAppMasterMetrics {
   val sourceName = "ApplicationMaster"

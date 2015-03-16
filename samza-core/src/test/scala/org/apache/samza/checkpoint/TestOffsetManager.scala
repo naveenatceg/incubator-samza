@@ -228,13 +228,11 @@ class TestOffsetManager {
       override def readLastCheckpoint(taskName: TaskName) = checkpoints.getOrElse(taskName, null)
       override def stop { isStopped = true }
 
-      //only for testing purposes
+      // Only for testing purposes - not present in actual checkpoint manager
       def getOffets: util.Map[SystemStreamPartition, String] =
       {
         checkpoint.getOffsets()
       }
-      //def writeChangeLogPartitionMapping(mapping: util.Map[TaskName, java.lang.Integer]): Unit = taskNameToPartitionMapping = mapping
-      //def readChangeLogPartitionMapping(): util.Map[TaskName, java.lang.Integer] = taskNameToPartitionMapping
     }
   }
 

@@ -19,9 +19,6 @@
 
 package org.apache.samza.system.chooser
 
-
-import org.apache.samza.utilj.UtilJ
-
 import scala.collection.JavaConversions._
 import org.apache.samza.SamzaException
 import org.apache.samza.config.Config
@@ -32,6 +29,7 @@ import org.apache.samza.system.IncomingMessageEnvelope
 import org.apache.samza.system.SystemFactory
 import org.apache.samza.system.SystemStream
 import org.apache.samza.system.SystemStreamPartition
+import org.apache.samza.util.Util
 import org.apache.samza.system.SystemAdmin
 import org.apache.samza.metrics.MetricsRegistry
 import org.apache.samza.metrics.MetricsRegistryMap

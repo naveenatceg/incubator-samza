@@ -132,7 +132,7 @@ class CheckpointTool(config: Config, newOffsets: TaskNameToCheckpointMap) extend
   val coordinatorStreamProducer = factory.getCoordinatorStreamSystemProducer(config, new MetricsRegistryMap())
   var manager = new CheckpointManager(coordinatorStreamProducer, coordinatorStreamConsumer)
 
-  //Only for testing/mocking purposes, this method should not have significance otherwise.
+  // Only for testing/mocking purposes, this method should not have significance otherwise.
   def setCheckpointManager(checkpointManager: CheckpointManager) {
     manager = checkpointManager
   }
@@ -169,7 +169,10 @@ class CheckpointTool(config: Config, newOffsets: TaskNameToCheckpointMap) extend
 
   /** Load the most recent checkpoint state for all a specified TaskName. */
   def readLastCheckpoint(taskName:TaskName): Map[SystemStreamPartition, String] = {
-    Option(manager.readLastCheckpoint(taskName)).getOrElse(new Checkpoint(new HashMap[SystemStreamPartition, String]())).getOffsets.toMap
+    Option(manager.readLastCheckpoint(taskName))
+            .getOrElse(new Checkpoint(new HashMap[SystemStreamPartition, String]()))
+            .getOffsets
+            .toMap
   }
 
   /**

@@ -32,8 +32,6 @@ allprojects {
   }
 }
 
-
-
 apply from: file("gradle/dependency-versions.gradle")
 apply from: file("gradle/dependency-versions-scala-" + scalaVersion + ".gradle")
 apply from: file("gradle/release.gradle")
@@ -124,6 +122,7 @@ project(':samza-api') {
 
 project(":samza-core_$scalaVersion") {
   apply plugin: 'scala'
+  // Force scala joint compilation
   sourceSets.main.scala.srcDir "src/main/java"
   sourceSets.main.java.srcDirs = []
   jar {

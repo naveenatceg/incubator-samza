@@ -31,7 +31,8 @@ import org.apache.samza.job.model.JobModel;
 import org.apache.samza.job.model.TaskModel;
 import org.apache.samza.system.SystemStream;
 import org.apache.samza.system.SystemStreamPartition;
-import org.codehaus.jackson.JsonGenerator;import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.ObjectCodec;
@@ -146,7 +147,7 @@ public class SamzaObjectMapper {
   public static class SystemStreamPartitionKeySerializer extends JsonSerializer<SystemStreamPartition> {
     @Override
     public void serialize(SystemStreamPartition systemStreamPartition, JsonGenerator jgen, SerializerProvider provider)
-        throws IOException, JsonProcessingException {
+        throws IOException {
       String ssp = new String(systemStreamPartition.getSystem() + "." + systemStreamPartition.getStream() + "." + String.valueOf(systemStreamPartition.getPartition().getPartitionId()));
       jgen.writeFieldName(ssp);
     }
@@ -154,17 +155,17 @@ public class SamzaObjectMapper {
 
   public static class SystemStreamPartitionKeyDeserializer extends KeyDeserializer {
     @Override
-    public Object deserializeKey(String ssp, DeserializationContext ctxt)
-        throws IOException, JsonProcessingException {
-      int idx = ssp.indexOf('.');
-      int lastIdx = ssp.lastIndexOf('.');
+    public Object deserializeKey(String sspString, DeserializationContext ctxt)
+        throws IOException {
+      int idx = sspString.indexOf('.');
+      int lastIdx = sspString.lastIndexOf('.');
       if (idx < 0 || lastIdx < 0) {
         throw new IllegalArgumentException("System stream partition expected in format 'system.stream.partition");
       }
-      SystemStreamPartition ssp1 = new SystemStreamPartition(new SystemStream(ssp.substring(0, idx),
-          ssp.substring(idx + 1, lastIdx)),
-          new Partition(Integer.parseInt(ssp.substring(lastIdx + 1))));
-      return ssp1;
+      SystemStreamPartition ssp = new SystemStreamPartition(new SystemStream(sspString.substring(0, idx),
+          sspString.substring(idx + 1, lastIdx)),
+          new Partition(Integer.parseInt(sspString.substring(lastIdx + 1))));
+      return ssp;
     }
   }
 

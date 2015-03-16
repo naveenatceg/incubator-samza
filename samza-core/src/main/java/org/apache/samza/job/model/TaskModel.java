@@ -62,7 +62,7 @@ public class TaskModel implements Comparable<TaskModel> {
     return changelogPartition;
   }
 
-  public Map<SystemStreamPartition, String> getCheckPoint() {
+  public Map<SystemStreamPartition, String> getCheckPointedOffsets() {
     return systemStreamPartitionsToOffsets;
   }
 

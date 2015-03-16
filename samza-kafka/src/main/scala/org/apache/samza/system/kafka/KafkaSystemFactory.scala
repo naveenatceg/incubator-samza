@@ -20,7 +20,6 @@
 package org.apache.samza.system.kafka
 
 import java.util.Properties
-
 import org.apache.samza.SamzaException
 import org.apache.samza.util.{Logging, KafkaUtil, ExponentialSleepStrategy, ClientUtilTopicMetadataStore}
 import org.apache.samza.config.Config
@@ -95,8 +94,6 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     val connectZk = () => {
       new ZkClient(zkConnect, 6000, 6000, ZKStringSerializer)
     }
-    // checkpoint topic will go away, and we'll just use the coordinator
-    // stream.
     val coordinatorStreamProperties = getCheckpointTopicProperties(config)
     val coordinatorStreamReplicationFactor = config
       .getCheckpointReplicationFactor.getOrElse("1")

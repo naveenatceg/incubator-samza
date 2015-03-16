@@ -138,6 +138,9 @@ class OffsetManager(
    */
   val systemAdmins: Map[String, SystemAdmin] = Map(),
 
+  /**
+   * The previously read checkpoints restored from the coordinator stream
+   */
   val previousCheckpointedOffsets: Map[SystemStreamPartition, String] = Map()
   ) extends Logging {
 
@@ -261,23 +264,6 @@ class OffsetManager(
         }
 
   }
-
-//  /**
-//   * Loads last processed offsets for a single taskName.
-//   */
-//  private def restoreOffsetsFromCheckpoint(taskName: TaskName): Map[SystemStreamPartition, String] = {
-//    debug("Loading checkpoints for taskName: %s." format taskName)
-//
-//    val checkpoint = checkpointManager.readLastCheckpoint(taskName)
-//
-//    if (checkpoint != null) {
-//      checkpoint.getOffsets.toMap
-//    } else {
-//      info("Did not receive a checkpoint for taskName %s. Proceeding without a checkpoint." format taskName)
-//
-//      Map()
-//    }
-//  }
 
   /**
    * Removes offset settings for all SystemStreams that are to be forcibly

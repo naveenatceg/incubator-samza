@@ -21,11 +21,10 @@ package org.apache.samza.container;
 /**
  * A unique identifier of a set of a SystemStreamPartitions that have been grouped by
  * a {@link org.apache.samza.container.grouper.stream.SystemStreamPartitionGrouper}.  The
- * SystemStreamPartitionGrouper determines the TaskName for each set it creates.
+ * SystemStreamPartitionGrouper determines the TaskName for each set it creates. The TaskName class
+ * should only contain the taskName.
  */
 public class TaskName implements Comparable<TaskName> {
-  // TaskName is the unique identifier used to identify messages in the coordinator stream, the class should be unique
-  // with just taskname
   private final String taskName;
 
   public String getTaskName() {

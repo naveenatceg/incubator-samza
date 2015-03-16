@@ -19,13 +19,12 @@
 
 package org.apache.samza.serializers
 import java.nio.ByteBuffer
+import org.apache.samza.util.Util
 import kafka.serializer.Encoder
 import kafka.serializer.Decoder
 import org.apache.samza.config.Config
 import org.apache.samza.config.KafkaSerdeConfig.Config2KafkaSerde
 import org.apache.samza.SamzaException
-import org.apache.samza.util.Util
-
 
 class KafkaSerde[T](encoder: Encoder[T], decoder: Decoder[T]) extends Serde[T] {
   def toBytes(obj: T): Array[Byte] = encoder.toBytes(obj)

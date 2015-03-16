@@ -38,7 +38,7 @@ public abstract class JsonTaskModelMixIn {
   abstract TaskName getTaskName();
 
   @JsonProperty("system-stream-partitions-offsets")
-  abstract Map<SystemStreamPartition, String> getCheckPoint();
+  abstract Map<SystemStreamPartition, String> getCheckPointedOffsets();
 
   @JsonProperty("changelog-partition")
   abstract Partition getChangelogPartition();

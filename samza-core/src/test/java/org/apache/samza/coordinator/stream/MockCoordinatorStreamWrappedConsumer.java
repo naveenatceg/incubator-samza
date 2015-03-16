@@ -32,7 +32,6 @@ import org.apache.samza.system.IncomingMessageEnvelope;
 import org.apache.samza.system.SystemStreamPartition;
 import org.apache.samza.util.BlockingEnvelopeMap;
 import org.apache.samza.util.Util;
-import org.apache.samza.utilj.UtilJ;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
@@ -65,7 +64,7 @@ public class MockCoordinatorStreamWrappedConsumer extends BlockingEnvelopeMap {
           String[] checkpointInfo = configPair.getKey().split(":");
           String[] sspOffsetPair = configPair.getValue().split(":");
           HashMap<SystemStreamPartition, String> checkpointMap = new HashMap<SystemStreamPartition, String>();
-          checkpointMap.put(UtilJ.stringToSsp(sspOffsetPair[0]), sspOffsetPair[1]);
+          checkpointMap.put(Util.stringToSsp(sspOffsetPair[0]), sspOffsetPair[1]);
           Checkpoint cp = new Checkpoint(checkpointMap);
           CoordinatorStreamMessage.SetCheckpoint setCheckpoint = new CoordinatorStreamMessage.SetCheckpoint(checkpointInfo[1], checkpointInfo[2], cp);
           keyBytes = MAPPER.writeValueAsString(setCheckpoint.getKeyArray()).getBytes("UTF-8");

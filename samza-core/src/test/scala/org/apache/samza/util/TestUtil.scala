@@ -29,8 +29,7 @@ import org.apache.samza.metrics.MetricsRegistry
 import org.apache.samza.system.SystemFactory
 import org.apache.samza.system.SystemFactory
 import org.apache.samza.system.SystemStreamPartition
-import org.apache.samza.utilj.UtilJ
-import UtilJ._
+import org.apache.samza.util.Util._
 import org.junit.Assert._
 import org.junit.Test
 

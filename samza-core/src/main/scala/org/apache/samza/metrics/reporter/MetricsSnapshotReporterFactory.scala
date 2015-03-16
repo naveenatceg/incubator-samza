@@ -31,13 +31,12 @@ import org.apache.samza.config.SerializerConfig.Config2Serializer
 import org.apache.samza.config.TaskConfig.Config2Task
 import org.apache.samza.metrics.MetricsReporter
 import org.apache.samza.metrics.MetricsReporterFactory
+import org.apache.samza.util.Util
 import org.apache.samza.metrics.ReadableMetricsRegistry
 import org.apache.samza.metrics.MetricsRegistryMap
 import org.apache.samza.serializers.Serializer
 import org.apache.samza.serializers.SerdeFactory
 import org.apache.samza.system.SystemFactory
-import org.apache.samza.util.Util
-
 
 class MetricsSnapshotReporterFactory extends MetricsReporterFactory with Logging {
   def getMetricsReporter(name: String, containerName: String, config: Config): MetricsReporter = {

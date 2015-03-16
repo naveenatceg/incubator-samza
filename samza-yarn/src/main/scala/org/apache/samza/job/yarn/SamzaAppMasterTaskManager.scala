@@ -21,8 +21,6 @@ package org.apache.samza.job.yarn
 
 import java.nio.ByteBuffer
 import java.util.Collections
-import org.apache.samza.utilj.UtilJ
-
 import scala.collection.JavaConversions._
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.DataOutputBuffer
@@ -39,12 +37,10 @@ import org.apache.hadoop.yarn.util.ConverterUtils
 import org.apache.hadoop.yarn.util.Records
 import org.apache.samza.config.Config
 import org.apache.samza.config.TaskConfig.Config2Task
-import org.apache.samza.config.YarnConfig
 import org.apache.samza.config.YarnConfig.Config2Yarn
 import org.apache.samza.job.CommandBuilder
 import org.apache.samza.job.ShellCommandBuilder
 import org.apache.samza.util.{Util, Logging}
-import org.apache.samza.coordinator.JobCoordinator
 import org.apache.samza.config.JobConfig.Config2Job
 
 object SamzaAppMasterTaskManager {

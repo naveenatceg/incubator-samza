@@ -22,6 +22,8 @@ package org.apache.samza.test.integration
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util
+
 import kafka.admin.AdminUtils
 import kafka.common.ErrorMapping
 import kafka.consumer.Consumer
@@ -34,6 +36,7 @@ import kafka.utils.TestZKUtils
 import kafka.utils.Utils
 import kafka.utils.ZKStringSerializer
 import kafka.zk.EmbeddedZookeeper
+
 import org.I0Itec.zkclient.ZkClient
 import org.apache.samza.Partition
 import org.apache.samza.checkpoint.Checkpoint
@@ -47,7 +50,6 @@ import org.apache.samza.storage.kv.KeyValueStore
 import org.apache.samza.system.kafka.TopicMetadataCache
 import org.apache.samza.system.{SystemStreamPartition, IncomingMessageEnvelope}
 import org.apache.samza.config.KafkaProducerConfig
-import org.apache.samza.system.IncomingMessageEnvelope
 import org.apache.samza.task.InitableTask
 import org.apache.samza.task.MessageCollector
 import org.apache.samza.task.StreamTask
@@ -56,15 +58,15 @@ import org.apache.samza.task.TaskCoordinator
 import org.apache.samza.task.TaskCoordinator.RequestScope
 import org.apache.samza.util.ClientUtilTopicMetadataStore
 import org.apache.samza.util.TopicMetadataStore
+import org.apache.samza.job.JobRunner
 import org.junit.Assert._
 import org.junit.{BeforeClass, AfterClass, Test}
+
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.SynchronizedMap
 import org.apache.kafka.clients.producer.{ProducerConfig, Producer, ProducerRecord, KafkaProducer}
-import java.util
-import org.apache.samza.job.JobRunner
 
 object TestStatefulTask {
   val INPUT_TOPIC = "input"
@@ -224,7 +226,7 @@ class TestStatefulTask {
     "systems.kafka.streams.input.samza.reset.offset" -> "true")
 
   @Test
-  def estShouldStartAndRestore {
+  def testShouldStartAndRestore {
     // Have to do this in one test to guarantee ordering.
     testShouldStartTaskForFirstTime
     testShouldRestoreStore

@@ -22,7 +22,6 @@ package org.apache.samza.system.mock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.samza.Partition;
 import org.apache.samza.SamzaException;
 import org.apache.samza.system.SystemAdmin;

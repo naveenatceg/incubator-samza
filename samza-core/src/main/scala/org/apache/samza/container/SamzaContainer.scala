@@ -21,7 +21,7 @@ package org.apache.samza.container
 
 import java.io.File
 import org.apache.samza.SamzaException
-import org.apache.samza.checkpoint.{CheckpointManager, OffsetManager}
+import org.apache.samza.checkpoint.{ CheckpointManager, OffsetManager }
 import org.apache.samza.config.Config
 import org.apache.samza.config.MetricsConfig.Config2Metrics
 import org.apache.samza.config.SerializerConfig.Config2Serializer
@@ -105,11 +105,10 @@ object SamzaContainer extends Logging {
    * constructor.
    */
   def readJobModel(url: String) = {
-    debug((Util.read(new URL(url))));
+    info("Fetching configuration from: %s" format url)
     SamzaObjectMapper
       .getObjectMapper
       .readValue(Util.read(new URL(url)), classOf[JobModel])
-
   }
 
   /**
@@ -333,10 +332,9 @@ object SamzaContainer extends Logging {
 
     info("Got checkpoint manager: %s" format checkpointManager)
 
-    var combinedOffsets: Map[SystemStreamPartition, String] = Map()
-    for(taskModel <- containerModel.getTasks.values()) {
-      combinedOffsets ++= taskModel.getCheckPoint
-    }
+    val combinedOffsets: Map[SystemStreamPartition, String] =
+      containerModel.getTasks.values().flatMap(_.getCheckPointedOffsets).toMap
+
     val offsetManager = OffsetManager(inputStreamMetadata, config, checkpointManager, systemAdmins, combinedOffsets)
 
     info("Got offset manager: %s" format offsetManager)

@@ -19,9 +19,6 @@
 
 package org.apache.samza.coordinator
 
-
-import java.util.Collections
-
 import org.apache.samza.changelog.ChangelogManager
 import org.apache.samza.config.Config
 import org.apache.samza.job.model.JobModel
@@ -53,10 +50,8 @@ import org.apache.samza.config.ConfigRewriter
  * given a Config object.
  */
 object JobCoordinator extends Logging {
-  
   var coordinatorSystemConsumer: CoordinatorStreamSystemConsumer = null
   var coordinatorSystemProducer: CoordinatorStreamSystemProducer = null
-  
   /**
    * @param coordinatorSystemConfig A config object that contains job.name,
    * job.id, and all system.&lt;job-coordinator-system-name&gt;.*
@@ -93,11 +88,11 @@ object JobCoordinator extends Logging {
   /**
    * Gets a CheckpointManager from the configuration.
    */
-  def getCheckpointManager(config: Config) = {
+  def getCheckpointManager() = {
     new CheckpointManager(coordinatorSystemProducer, coordinatorSystemConsumer)
   }
 
-  def getChangelogManager(config: Config) = {
+  def getChangelogManager() = {
     new ChangelogManager(coordinatorSystemProducer, coordinatorSystemConsumer)
   }
 
@@ -168,7 +163,7 @@ object JobCoordinator extends Logging {
   def buildJobModel(config: Config, containerCount: Int) = {
     // TODO containerCount should go away when we generalize the job coordinator, 
     // and have a non-yarn-specific way of specifying container count.
-    val changelogManager = getChangelogManager(config)
+    val changelogManager = getChangelogManager()
     val allSystemStreamPartitions = getInputStreamPartitions(config)
     val grouper = getSystemStreamPartitionGrouper(config)
     val previousChangelogeMapping = if (changelogManager != null) {
@@ -188,7 +183,8 @@ object JobCoordinator extends Logging {
       .lastOption
       .getOrElse(-1)
 
-    val checkpointManager = getCheckpointManager(config)
+    val checkpointManager = getCheckpointManager()
+    checkpointManager.start
     // Assign all SystemStreamPartitions to TaskNames.
     val taskModels = {
       val groups = grouper.group(allSystemStreamPartitions)

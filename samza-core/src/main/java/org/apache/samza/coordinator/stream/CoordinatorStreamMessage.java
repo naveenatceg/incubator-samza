@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.apache.samza.checkpoint.Checkpoint;
 import org.apache.samza.system.SystemStreamPartition;
-import org.apache.samza.utilj.UtilJ;
+import org.apache.samza.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -407,20 +407,26 @@ public class CoordinatorStreamMessage {
       super(message.getKeyArray(), message.getMessageMap());
     }
 
+    /**
+     *
+     * @param source The source writing the checkpoint
+     * @param key The key for the checkpoint message (Typically task name)
+     * @param checkpoint Checkpoint message to be written to the stream
+     */
     public SetCheckpoint(String source, String key, Checkpoint checkpoint) {
       super(source);
       setType(TYPE);
       setKey(key);
       Map<SystemStreamPartition, String> offsets = checkpoint.getOffsets();
       for (Map.Entry<SystemStreamPartition, String> systemStreamPartitionStringEntry : offsets.entrySet()) {
-        putMessageValue(UtilJ.sspToString(systemStreamPartitionStringEntry.getKey()), systemStreamPartitionStringEntry.getValue());
+        putMessageValue(Util.sspToString(systemStreamPartitionStringEntry.getKey()), systemStreamPartitionStringEntry.getValue());
       }
     }
 
     public Checkpoint getCheckpoint() {
       Map<SystemStreamPartition, String> offsetMap = new HashMap<SystemStreamPartition, String>();
       for (Map.Entry<String, String> sspToOffsetEntry : getMessageValues().entrySet()) {
-        offsetMap.put(UtilJ.stringToSsp(sspToOffsetEntry.getKey()), sspToOffsetEntry.getValue());
+        offsetMap.put(Util.stringToSsp(sspToOffsetEntry.getKey()), sspToOffsetEntry.getValue());
       }
       return new Checkpoint(offsetMap);
     }
@@ -446,6 +452,12 @@ public class CoordinatorStreamMessage {
       super(message.getKeyArray(), message.getMessageMap());
     }
 
+    /**
+     *
+     * @param source Source writing the change log mapping
+     * @param taskName The task name to be used in the mapping
+     * @param changelogPartitionNumber The partition to which the task's changelog is mapped to
+     */
     public SetChangelogMapping(String source, String taskName, int changelogPartitionNumber) {
       super(source);
       setType(TYPE);

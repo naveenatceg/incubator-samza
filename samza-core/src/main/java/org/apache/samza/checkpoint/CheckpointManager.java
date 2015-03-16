@@ -34,80 +34,88 @@ import org.slf4j.LoggerFactory;
 
 public class CheckpointManager {
 
-    Map<TaskName, Checkpoint> taskNamesToOffsets = new HashMap<TaskName, Checkpoint>();
-    CoordinatorStreamSystemProducer coordinatorStreamProducer;
-    CoordinatorStreamSystemConsumer coordinatorStreamConsumer;
-    Set<CoordinatorStreamMessage> bootstrappedStream;
-    HashSet<TaskName> taskNames = new HashSet<TaskName>();
-    private static final Logger log = LoggerFactory.getLogger(ChangelogManager.class);
+  Map<TaskName, Checkpoint> taskNamesToOffsets = new HashMap<TaskName, Checkpoint>();
+  CoordinatorStreamSystemProducer coordinatorStreamProducer;
+  CoordinatorStreamSystemConsumer coordinatorStreamConsumer;
+  Set<CoordinatorStreamMessage> bootstrappedStream;
+  HashSet<TaskName> taskNames = new HashSet<TaskName>();
+  private static final Logger log = LoggerFactory.getLogger(ChangelogManager.class);
 
-    public CheckpointManager(CoordinatorStreamSystemProducer coordinatorStreamProducer, CoordinatorStreamSystemConsumer coordinatorStreamConsumer) {
+  public CheckpointManager(CoordinatorStreamSystemProducer coordinatorStreamProducer, CoordinatorStreamSystemConsumer coordinatorStreamConsumer) {
     this.coordinatorStreamConsumer = coordinatorStreamConsumer;
     this.coordinatorStreamProducer = coordinatorStreamProducer;
-    }
+  }
 
 
-    public void start() {
-        coordinatorStreamProducer.start();
-        coordinatorStreamConsumer.start();
-        bootstrapCoordinatorStream();
-    }
+  public void start() {
+    coordinatorStreamProducer.start();
+    coordinatorStreamConsumer.start();
+    bootstrapCoordinatorStream();
+  }
 
-    public void bootstrapCoordinatorStream() {
-      coordinatorStreamConsumer.bootstrap();
-      bootstrappedStream = coordinatorStreamConsumer.getBoostrappedStream();
-      HashSet<CoordinatorStreamMessage> filteredSet = new HashSet<CoordinatorStreamMessage>();
 
-      for (CoordinatorStreamMessage coordinatorStreamMessage : bootstrappedStream) {
-        if(coordinatorStreamMessage.getType().equalsIgnoreCase(CoordinatorStreamMessage.SetCheckpoint.TYPE))
-          filteredSet.add(coordinatorStreamMessage);
+  /**
+   * The bootstrap method is used catchup with the latest version of the coordinator stream's contents.
+   * The method also filters for checkpoint messages.
+   */
+  private void bootstrapCoordinatorStream() {
+    log.debug("Bootstrapping coordinator stream to read latest checkpoints");
+    coordinatorStreamConsumer.bootstrap();
+    bootstrappedStream = coordinatorStreamConsumer.getBoostrappedStream();
+    HashSet<CoordinatorStreamMessage> filteredSet = new HashSet<CoordinatorStreamMessage>();
+
+    for (CoordinatorStreamMessage coordinatorStreamMessage : bootstrappedStream) {
+      if(coordinatorStreamMessage.getType().equalsIgnoreCase(CoordinatorStreamMessage.SetCheckpoint.TYPE)) {
+        filteredSet.add(coordinatorStreamMessage);
       }
-      bootstrappedStream = filteredSet;
     }
+    bootstrappedStream = filteredSet;
+  }
 
-    /**
-     * Registers this manager to write checkpoints of a specific Samza stream partition.
-     * @param taskName Specific Samza taskName of which to write checkpoints for.
-     */
-    public void register(TaskName taskName) {
-        log.debug("Adding taskName " + taskName + " to " + this);
-        taskNames.add(taskName);
-        coordinatorStreamConsumer.register();
-        coordinatorStreamProducer.register(taskName.getTaskName());
-    }
+  /**
+   * Registers this manager to write checkpoints of a specific Samza stream partition.
+   * @param taskName Specific Samza taskName of which to write checkpoints for.
+   */
+  public void register(TaskName taskName) {
+    log.debug("Adding taskName {} to {}", taskName, this);
+    taskNames.add(taskName);
+    coordinatorStreamConsumer.register();
+    coordinatorStreamProducer.register(taskName.getTaskName());
+  }
 
-    /**
-     * Writes a checkpoint based on the current state of a Samza stream partition.
-     * @param taskName Specific Samza taskName of which to write a checkpoint of.
-     * @param checkpoint Reference to a Checkpoint object to store offset data in.
-     */
-    public void writeCheckpoint(TaskName taskName, Checkpoint checkpoint) {
-        CoordinatorStreamMessage.SetCheckpoint checkPointMessage = new CoordinatorStreamMessage.SetCheckpoint(taskName.getTaskName(), taskName.getTaskName(), checkpoint);
-        coordinatorStreamProducer.send(checkPointMessage);
-    }
+  /**
+   * Writes a checkpoint based on the current state of a Samza stream partition.
+   * @param taskName Specific Samza taskName of which to write a checkpoint of.
+   * @param checkpoint Reference to a Checkpoint object to store offset data in.
+   */
+  public void writeCheckpoint(TaskName taskName, Checkpoint checkpoint) {
+    log.debug("Writing checkpoint for Task: {} with offsets: {}", taskName.getTaskName(), checkpoint.getOffsets());
+    CoordinatorStreamMessage.SetCheckpoint checkPointMessage = new CoordinatorStreamMessage.SetCheckpoint(taskName.getTaskName(), taskName.getTaskName(), checkpoint);
+    coordinatorStreamProducer.send(checkPointMessage);
+  }
 
-    /**
-     * Returns the last recorded checkpoint for a specified taskName.
-     * @param taskName Specific Samza taskName for which to get the last checkpoint of.
-     * @return A Checkpoint object with the recorded offset data of the specified partition.
-     */
-    public Checkpoint readLastCheckpoint(TaskName taskName) {
-        //Bootstrap each time to make sure that we are caught up with the stream, the bootstrap will just catch up on consecutive calls
-        bootstrapCoordinatorStream();
-      for (CoordinatorStreamMessage coordinatorStreamMessage : bootstrappedStream) {
-        CoordinatorStreamMessage.SetCheckpoint setCheckpoint = new CoordinatorStreamMessage.SetCheckpoint(coordinatorStreamMessage);
-        TaskName taskNameInCheckpoint = new TaskName(setCheckpoint.getKey());
-        if(taskNames.contains(taskNameInCheckpoint)) {
-          taskNamesToOffsets.put(taskNameInCheckpoint, setCheckpoint.getCheckpoint());
-          log.debug("Adding checkpoint " + taskNameInCheckpoint + " for taskName " + taskName);
-        }
+  /**
+   * Returns the last recorded checkpoint for a specified taskName.
+   * @param taskName Specific Samza taskName for which to get the last checkpoint of.
+   * @return A Checkpoint object with the recorded offset data of the specified partition.
+   */
+  public Checkpoint readLastCheckpoint(TaskName taskName) {
+    // Bootstrap each time to make sure that we are caught up with the stream, the bootstrap will just catch up on consecutive calls
+    log.debug("Reading checkpoint for Task: {}", taskName.getTaskName());
+    bootstrapCoordinatorStream();
+    for (CoordinatorStreamMessage coordinatorStreamMessage : bootstrappedStream) {
+      CoordinatorStreamMessage.SetCheckpoint setCheckpoint = new CoordinatorStreamMessage.SetCheckpoint(coordinatorStreamMessage);
+      TaskName taskNameInCheckpoint = new TaskName(setCheckpoint.getKey());
+      if(taskNames.contains(taskNameInCheckpoint)) {
+        taskNamesToOffsets.put(taskNameInCheckpoint, setCheckpoint.getCheckpoint());
+        log.debug("Adding checkpoint {} for taskName {}", taskNameInCheckpoint, taskName);
       }
-
-        return taskNamesToOffsets.get(taskName);
     }
+    return taskNamesToOffsets.get(taskName);
+  }
 
-    public void stop() {
-        coordinatorStreamConsumer.stop();
-        coordinatorStreamProducer.stop();
-    }
+  public void stop() {
+    coordinatorStreamConsumer.stop();
+    coordinatorStreamProducer.stop();
+  }
 }

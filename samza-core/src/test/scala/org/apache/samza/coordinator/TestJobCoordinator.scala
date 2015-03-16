@@ -19,8 +19,7 @@
 
 package org.apache.samza.coordinator
 
-
-import org.apache.samza.utilj.UtilJ
+import org.apache.samza.util.Util
 import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
@@ -28,7 +27,6 @@ import org.apache.samza.config.MapConfig
 import org.apache.samza.config.TaskConfig
 import org.apache.samza.config.SystemConfig
 import org.apache.samza.container.TaskName
-import org.apache.samza.checkpoint.Checkpoint
 import org.apache.samza.metrics.MetricsRegistry
 import org.apache.samza.config.Config
 import org.apache.samza.system.SystemFactory
@@ -76,9 +74,9 @@ class TestJobCoordinator {
 
     // The test does not pass offsets for task2 (Partition 2) to the checkpointmanager, this will verify that we get an offset 0 for this partition
     val checkpointOffset0 = MockCoordinatorStreamWrappedConsumer.CHECKPOINTPREFIX + "mock:" +
-            task0Name.getTaskName() -> (UtilJ.sspToString(checkpoint0.keySet.iterator.next()) + ":" + checkpoint0.values.iterator.next())
+            task0Name.getTaskName() -> (Util.sspToString(checkpoint0.keySet.iterator.next()) + ":" + checkpoint0.values.iterator.next())
     val checkpointOffset1 = MockCoordinatorStreamWrappedConsumer.CHECKPOINTPREFIX + "mock:" +
-            task1Name.getTaskName() -> (UtilJ.sspToString(checkpoint1.keySet.iterator.next()) + ":" + checkpoint1.values.iterator.next())
+            task1Name.getTaskName() -> (Util.sspToString(checkpoint1.keySet.iterator.next()) + ":" + checkpoint1.values.iterator.next())
     val changelogInfo0 = MockCoordinatorStreamWrappedConsumer.CHANGELOGPREFIX + "mock:" + task0Name.getTaskName() -> "4"
     val changelogInfo1 = MockCoordinatorStreamWrappedConsumer.CHANGELOGPREFIX + "mock:" + task1Name.getTaskName() -> "3"
     val changelogInfo2 = MockCoordinatorStreamWrappedConsumer.CHANGELOGPREFIX + "mock:" + task2Name.getTaskName() -> "5"
