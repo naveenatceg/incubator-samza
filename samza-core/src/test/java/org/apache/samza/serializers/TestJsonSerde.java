@@ -17,19 +17,21 @@
  * under the License.
  */
 
-package org.apache.samza.serializers
+package org.apache.samza.serializers;
 
-import org.junit.Assert._
-import org.junit.Test
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
-import scala.collection.JavaConversions._
-
-class TestJsonSerde {
+public class TestJsonSerde {
   @Test
-  def testJsonSerdeShouldWork {
-    val serde = new JsonSerde
-    val obj = new java.util.HashMap[String, Object](Map[String, Object]("hi" -> "bye", "why" -> new java.lang.Integer(2)))
-    val bytes = serde.toBytes(obj)
-    assertEquals(obj, serde.fromBytes(bytes))
+  public void testJsonSerdeShouldWork() {
+    Serde<Map<String, Object>> serde = new JsonSerde<Map<String, Object>>();
+    Map<String, Object> obj = new HashMap<String, Object>();
+    obj.put("hi", "bye");
+    obj.put("why", Integer.valueOf(2));
+    byte[] bytes = serde.toBytes(obj);
+    assertEquals(obj, serde.fromBytes(bytes));
   }
 }

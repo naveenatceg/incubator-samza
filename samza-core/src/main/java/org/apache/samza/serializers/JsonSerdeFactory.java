@@ -17,22 +17,15 @@
  * under the License.
  */
 
-package org.apache.samza.serializers
-import org.codehaus.jackson.map.ObjectMapper
-import java.nio.ByteBuffer
-import org.apache.samza.config.Config
+package org.apache.samza.serializers;
 
-class JsonSerde extends Serde[Object] {
-  val objectMapper = new ObjectMapper
+import org.apache.samza.config.Config;
+import org.apache.samza.serializers.Serde;
+import org.apache.samza.serializers.SerdeFactory;
 
-  def toBytes(obj: Object) = objectMapper
-    .writeValueAsString(obj)
-    .getBytes("UTF-8")
-
-  def fromBytes(bytes: Array[Byte]) = objectMapper
-    .readValue(bytes, classOf[Object])
-}
-
-class JsonSerdeFactory extends SerdeFactory[Object] {
-  def getSerde(name: String, config: Config) = new JsonSerde
+public class JsonSerdeFactory implements SerdeFactory<Object> {
+  @Override
+  public Serde<Object> getSerde(String name, Config config) {
+    return new JsonSerde<Object>();
+  }
 }

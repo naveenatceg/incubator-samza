@@ -28,7 +28,6 @@ import org.apache.samza.system.SystemFactory
 import org.I0Itec.zkclient.ZkClient
 import kafka.utils.ZKStringSerializer
 
-
 class KafkaSystemFactory extends SystemFactory with Logging {
   def getConsumer(systemName: String, config: Config, registry: MetricsRegistry) = {
     val clientId = KafkaUtil.getClientId("samza-consumer", config)
@@ -88,8 +87,19 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     val consumerConfig = config.getKafkaSystemConsumerConfig(systemName, clientId)
     val timeout = consumerConfig.socketTimeoutMs
     val bufferSize = consumerConfig.socketReceiveBufferBytes
+    val zkConnect = Option(consumerConfig.zkConnect)
+      .getOrElse(throw new SamzaException("no zookeeper.connect defined in config"))
+    val connectZk = () => {
+      new ZkClient(zkConnect, 6000, 6000, ZKStringSerializer)
+    }
+    // TODO Piggy back off of the checkpoint topic for now. Eventually, the 
+    // checkpoint topic will go away, and we'll just use the coordinator 
+    // stream.
+    val coordinatorStreamProperties = KafkaCheckpointManagerFactory.getCheckpointTopicProperties(config)
+    val coordinatorStreamReplicationFactor = config
+      .getCheckpointReplicationFactor.getOrElse("3")
+      .toInt
     val storeToChangelog = config.getKafkaChangelogEnabledStores()
-
     // Construct the meta information for each topic, if the replication factor is not defined, we use 2 as the number of replicas for the change log stream.
     val topicMetaInformation = storeToChangelog.map{case (storeName, topicName) =>
     {
@@ -102,10 +112,12 @@ class KafkaSystemFactory extends SystemFactory with Logging {
     new KafkaSystemAdmin(
       systemName,
       bootstrapServers,
+      connectZk,
+      coordinatorStreamProperties,
+      coordinatorStreamReplicationFactor,
       timeout,
       bufferSize,
       clientId,
-      () => new ZkClient(consumerConfig.zkConnect, 6000, 6000, ZKStringSerializer),
       topicMetaInformation)
   }
 }
